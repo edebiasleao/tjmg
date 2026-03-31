@@ -3,7 +3,7 @@
 // router.js — Navegação entre telas: G, Gb, navt, bH
 // TJMG Fiscal PWA — Fase 4 da modularização
 // Dependências: utils.js (el), state.js (S)
-// window-exports: G, Gb, navt (chamados por onclick inline)
+// window-exports: G, Gb, navt, bH, BNS
 // ============================================================
 
 function G(id){var c=document.querySelector('.scr.act');var n=el(id);if(!n||c===n)return;if(c){c.classList.add('bk');setTimeout(function(){c.classList.remove('act','bk');},300);}n.classList.add('act');}
@@ -29,11 +29,9 @@ function navt(t){
   var c=document.querySelector('.scr.act');var n=el(x.s);if(!n||c===n)return;if(c)c.classList.remove('act');n.classList.add('act');
 }
 
-
-function rLogin(){
-
-// ── Expor para onclick inline ──────────────────────────────────────────────
+// ── Expor para onclick inline ─────────────────────────────────────────────
 window.G    = G;
 window.Gb   = Gb;
 window.navt = navt;
 window.bH   = bH;
+window.BNS  = BNS;

@@ -4,7 +4,9 @@
    - Demais assets → cache-first, atualiza cache em background
    - Domínios externos (Supabase, CDN, Google) → nunca interceptados
 
-   v68: Fase 3 da modularização — js/report-html.js extraído do index.html.
+   v69: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
+        index.html: 4791 → 4470 linhas (−321 / −7%).
+        v68: Fase 3 — report-html.js extraído do index.html.
         Funções removidas do index: exportHTML, _gerarHTMLStr, _doExportHTML,
         exportHTMLSub, _gerarHTMLSubStr, _doExportHTMLSub, normProt,
         gerarProtocolo, gerarTipoLbl, enviarParaDrive, uploadHtmlToSupabase,
@@ -14,7 +16,7 @@
         index.html: 5663 → 4791 linhas (−872 / −15%).
 */
 
-const V = 'tjmg-v68';
+const V = 'tjmg-v69';
 const CACHE = [
   './',
   './index.html',
@@ -29,11 +31,10 @@ const CACHE = [
   './db.js',
   /* ── Fase 3: geração de relatórios HTML ── */
   './report-html.js',
-  /* ── Fase 4: a extrair futuramente ──
+  /* ── Fase 4: utils, router, auth ── */
   './utils.js',
   './router.js',
   './auth.js',
-  */
 ];
 
 const BYPASS = [
