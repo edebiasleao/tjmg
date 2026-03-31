@@ -8,7 +8,7 @@
         Bump de v65 → v66 força re-download dos módulos novos em todos os dispositivos.
 */
 
-const V = 'tjmg-v66-2';
+const V = 'tjmg-v66';
 const CACHE = [
   './',
   './index.html',
