@@ -8,15 +8,15 @@
         Bump de v65 → v66 força re-download dos módulos novos em todos os dispositivos.
 */
 
-const V = 'tjmg-v66';
+const V = 'tjmg-v66-2';
 const CACHE = [
   './',
   './index.html',
   './manifest.json',
   /* ── Fase 1: módulos extraídos ── */
-  './js/config.js',
-  './js/data.js',
-  './js/state.js'
+  './config.js',
+  './data.js',
+  './state.js'
   /* Fases seguintes: adicionar aqui conforme cada módulo for extraído
   './js/sync.js',
   './js/photo-store.js',
