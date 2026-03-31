@@ -2,7 +2,9 @@
 // ============================================================
 // sync.js — Objeto Sync: push/pull Supabase via Edge Function
 // TJMG Fiscal PWA — Fase 2 da modularização
-// Dependências: config.js, state.js (S, SB, EDGE_SYNC_URL, etc.)
+// Dependências (globais): S, US, SB, SUPABASE_URL,
+//   SUPABASE_PUBLISHABLE_KEY, EDGE_SYNC_URL, SYNC_SECRET
+//   Tt, el (utils — carregados depois, mas chamados só em runtime)
 // ============================================================
 
 var Sync={
@@ -460,4 +462,5 @@ var Sync={
     }finally{this.busy=false;}
   }
 };
+
 

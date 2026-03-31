@@ -1,9 +1,10 @@
 'use strict';
 // ============================================================
-// db.js — Objeto DB (persistência local + autosave)
+// db.js — Persistência local (DB) + autoSave
 // TJMG Fiscal PWA — Fase 2 da modularização
-// Dependências: state.js (S, US), photo-store.js (PhotoStore),
-//               sync.js (Sync), utils.js (Tt, el)
+// Dependências (globais): S, US, PhotoStore, Sync, Tt, el
+//   normalizeFormState, syncDraftFromF (carregados depois,
+//   chamados apenas em runtime pelo autosave)
 // ============================================================
 
 var autoSaveTimer=null,autoSaveLastHash='',autoSaveLastAt=0;
@@ -92,7 +93,37 @@ var DB={
     /* updated_at marcado individualmente em cada operação */
     Sync.schedulePush(600);
   },
-  ld:async function(){try{
+  ld:async function(){
+    /* ── PASSO 1 (SÍNCRONO): carrega usuários ANTES de qualquer async ────────
+       Garante que US nunca fica vazio mesmo se IndexedDB rejeitar.
+       Colocar antes do try/catch evita que erros async engulam este bloco. */
+    var _defaultUS=[
+      {id:'u1',nome:'Edenias Gonzaga Leão',mat:'P0155070',pin:'0872',reg:'NORTE',cargo:'Apoio Técnico',polo:'Montes Claros',ativo:true},
+      {id:'u2',nome:'Túlio Heleno L. Lobato',mat:'T2183-2',pin:'2183',reg:'NORTE',cargo:'Fiscal',polo:'Montes Claros',ativo:true},
+      {id:'u3',nome:'Jarém Guarany Gomes Jr.',mat:'T006387-5',pin:'6387',reg:'CENTRAL',cargo:'Fiscal',polo:'Contagem',ativo:true},
+      {id:'u4',nome:'Luís Cláudio F. Cunha',mat:'600.94701',pin:'4701',reg:'CENTRAL',cargo:'Fiscal',polo:'Betim',ativo:true},
+      {id:'u5',nome:'Márcia Gomes Alvarenga',mat:'T008172-9',pin:'8172',reg:'LESTE',cargo:'Fiscal',polo:'Gov. Valadares',ativo:true},
+      {id:'u6',nome:'Guilherme A. Alencar',mat:'P0094702',pin:'4702',reg:'LESTE',cargo:'Fiscal',polo:'Ipatinga',ativo:true},
+      {id:'u7',nome:'Rui Cassiano R. Lima',mat:'P0117128',pin:'7128',reg:'LESTE',cargo:'Fiscal',polo:'Itabira',ativo:true},
+      {id:'u8',nome:'José Agostinho H. R. Assunção',mat:'',pin:'8001',reg:'ZONA_MATA',cargo:'Fiscal',polo:'Juiz de Fora',ativo:true},
+      {id:'u9',nome:'Thiago Abreu',mat:'',pin:'9001',reg:'ZONA_MATA',cargo:'Fiscal',polo:'Juiz de Fora',ativo:true},
+      {id:'u10',nome:'Alisson Cruz Pereira',mat:'8546-4',pin:'5461',reg:'TRIANGULO',cargo:'Fiscal',polo:'',ativo:true},
+      {id:'u11',nome:'Flávio Ferreira Ribeiro',mat:'60130718',pin:'3071',reg:'TRIANGULO',cargo:'Fiscal',polo:'',ativo:true},
+      {id:'u12',nome:'Raphael Alan Ferreira',mat:'P0115765',pin:'1157',reg:'SUL',cargo:'Fiscal',polo:'',ativo:true},
+      {id:'u13',nome:'Diego Henrique C. Oliveira',mat:'P0128696',pin:'2869',reg:'SUL',cargo:'Fiscal',polo:'',ativo:true},
+      {id:'u14',nome:'Vanderlúcio de Jesus Ferreira',mat:'',pin:'7743',reg:'SUDOESTE',cargo:'Fiscal',polo:'',ativo:true},
+      {id:'u15',nome:'Taciano de Paula Costa Bastos',mat:'',pin:'9254',reg:'SUDOESTE',cargo:'Fiscal',polo:'',ativo:true}
+    ];
+    US.splice(0,US.length);
+    _defaultUS.forEach(function(d){US.push(d);});
+    /* Aplica edições do admin (tu) se existirem */
+    try{
+      var _tu0=localStorage.getItem('tu');
+      if(_tu0){var _tuArr0=JSON.parse(_tu0);if(Array.isArray(_tuArr0)){_tuArr0.forEach(function(x){if(!x||!x.id)return;var _idx=US.findIndex(function(u){return u.id===x.id;});var _safe={};if(x.pin&&/^\d{4}$/.test(x.pin))_safe.pin=x.pin;if(x.nome&&x.nome.trim())_safe.nome=x.nome.trim();if(x.updated_at)_safe.updated_at=x.updated_at;if(x.cargo)_safe.cargo=x.cargo;if(x.reg)_safe.reg=x.reg;if(x.mat!==undefined)_safe.mat=x.mat;if(x.polo!==undefined)_safe.polo=x.polo;if(x.ativo!==undefined)_safe.ativo=x.ativo;if(_idx>=0)US[_idx]=Object.assign({},US[_idx],_safe);else US.push(x);});}}
+    }catch(_e0){console.warn('tu parse erro (sync)',_e0);}
+
+    /* ── PASSO 2 (ASYNC): carrega inspeções do IndexedDB/localStorage ────── */
+    try{
     /* Carrega inspeções: localStorage (rápido) ou IDB (fallback quando quota excedida) */
     var rawInsp=localStorage.getItem('ti');
     if(!rawInsp){
@@ -111,58 +142,10 @@ var DB={
       });
     })).catch(function(){});}
     var s=localStorage.getItem('ts');if(s){var d=JSON.parse(s);if(Date.now()-(d._t||0)<28800000)S.sessao=d;else localStorage.removeItem('ts');}
-    /* ── Carrega usuários: padrão sempre presentes, tu só para extras/edições ──
-       Garante que u1-u15 nunca desaparecem da tela de login mesmo com
-       localStorage corrompido ou de versão anterior. */
-    var _defaultUS=[
-      {id:'u1',nome:'Edenias Gonzaga Leão',mat:'P0155070',pin:'0872',reg:'NORTE',cargo:'Apoio Técnico',polo:'Montes Claros',ativo:true},
-      {id:'u2',nome:'Túlio Heleno L. Lobato',mat:'T2183-2',pin:'2183',reg:'NORTE',cargo:'Fiscal',polo:'Montes Claros',ativo:true},
-      {id:'u3',nome:'Jarém Guarany Gomes Jr.',mat:'T006387-5',pin:'6387',reg:'CENTRAL',cargo:'Fiscal',polo:'Contagem',ativo:true},
-      {id:'u4',nome:'Luís Cláudio F. Cunha',mat:'600.94701',pin:'4701',reg:'CENTRAL',cargo:'Fiscal',polo:'Betim',ativo:true},
-      {id:'u5',nome:'Márcia Gomes Alvarenga',mat:'T008172-9',pin:'8172',reg:'LESTE',cargo:'Fiscal',polo:'Gov. Valadares',ativo:true},
-      {id:'u6',nome:'Guilherme A. Alencar',mat:'P0094702',pin:'4702',reg:'LESTE',cargo:'Fiscal',polo:'Ipatinga',ativo:true},
-      {id:'u7',nome:'Rui Cassiano R. Lima',mat:'P0117128',pin:'7128',reg:'LESTE',cargo:'Fiscal',polo:'Itabira',ativo:true},
-      {id:'u8',nome:'José Agostinho H. R. Assunção',mat:'',pin:'8001',reg:'ZONA_MATA',cargo:'Fiscal',polo:'Juiz de Fora',ativo:true},
-      {id:'u9',nome:'Thiago Abreu',mat:'',pin:'9001',reg:'ZONA_MATA',cargo:'Fiscal',polo:'Juiz de Fora',ativo:true},
-      {id:'u10',nome:'Alisson Cruz Pereira',mat:'8546-4',pin:'5461',reg:'TRIANGULO',cargo:'Fiscal',polo:'',ativo:true},
-      {id:'u11',nome:'Flávio Ferreira Ribeiro',mat:'60130718',pin:'3071',reg:'TRIANGULO',cargo:'Fiscal',polo:'',ativo:true},
-      {id:'u12',nome:'Raphael Alan Ferreira',mat:'P0115765',pin:'1157',reg:'SUL',cargo:'Fiscal',polo:'',ativo:true},
-      {id:'u13',nome:'Diego Henrique C. Oliveira',mat:'P0128696',pin:'2869',reg:'SUL',cargo:'Fiscal',polo:'',ativo:true},
-      {id:'u14',nome:'Vanderlúcio de Jesus Ferreira',mat:'',pin:'7743',reg:'SUDOESTE',cargo:'Fiscal',polo:'',ativo:true},
-      {id:'u15',nome:'Taciano de Paula Costa Bastos',mat:'',pin:'9254',reg:'SUDOESTE',cargo:'Fiscal',polo:'',ativo:true}
-    ];
-    /* Sempre reinicia US com os padrões */
-    US.splice(0,US.length);
-    _defaultUS.forEach(function(d){US.push(d);});
-    /* Aplica edições do admin (tu): atualiza existentes, adiciona extras */
-    try{
-      var _tu=localStorage.getItem('tu');
-      if(_tu){
-        var _tuArr=JSON.parse(_tu);
-        if(Array.isArray(_tuArr)){
-          _tuArr.forEach(function(x){
-            if(!x||!x.id)return;
-            var _idx=US.findIndex(function(u){return u.id===x.id;});
-            if(_idx>=0){
-              /* Só aplica campos do localStorage se forem válidos.
-                 Impede que pin:'' corrompido sobrescreva o pin correto do _defaultUS. */
-              var _safe={};
-              if(x.pin&&/^\d{4}$/.test(x.pin))_safe.pin=x.pin;
-              if(x.nome&&x.nome.trim())_safe.nome=x.nome.trim();
-              if(x.updated_at)_safe.updated_at=x.updated_at;
-              if(x.cargo)_safe.cargo=x.cargo;
-              if(x.reg)_safe.reg=x.reg;
-              if(x.mat!==undefined)_safe.mat=x.mat;
-              if(x.polo!==undefined)_safe.polo=x.polo;
-              if(x.ativo!==undefined)_safe.ativo=x.ativo;
-              US[_idx]=Object.assign({},US[_idx],_safe);
-            }
-            else{US.push(x);}
-          });
-        }
-      }
-    }catch(_e){console.warn('tu parse erro',_e);}
-  }catch(e){}}
+    /* Atualiza US com dados do Supabase/pull que possam ter chegado via mergeRemoteUsers */
+    }catch(e){console.warn('[DB.ld] erro async (inspeções/sessão):',e);}
+  }
 };
+
 
 

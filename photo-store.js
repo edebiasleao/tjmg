@@ -1,8 +1,8 @@
 'use strict';
 // ============================================================
-// photo-store.js — IndexedDB wrapper para fotos e inspeções
+// photo-store.js — IndexedDB para fotos e inspeções (IIFE)
 // TJMG Fiscal PWA — Fase 2 da modularização
-// Sem dependências externas — módulo puro (IIFE).
+// Sem dependências externas. Expõe: window.PhotoStore
 // ============================================================
 
 var PhotoStore=(function(){
@@ -160,4 +160,5 @@ var PhotoStore=(function(){
   }
   return{put:put,get:get,del:del,listKeys:listKeys,migrate:migrate,loadForInsp:loadForInsp,delInsp:delInsp,putSubAll:putSubAll,loadSubAll:loadSubAll,putAllInsp:putAllInsp,getAllInsp:getAllInsp};
 })();
+
 
