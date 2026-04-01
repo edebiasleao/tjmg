@@ -193,13 +193,21 @@ function _gerarPDFDoIframe(iframe, nomeArq, resolve, reject) {
     script.onload = function() {
       try {
         var worker = iframe.contentWindow.html2pdf();
-        /* IMPORTANT: use the iframe's own JSON.parse — html2pdf.js checks
-           obj.constructor === Array (not Array.isArray), so arrays must
-           be created inside the iframe's JS realm or the cross-frame
-           constructor mismatch will throw "Invalid margin array". */
-        var _cfgSrc = JSON.stringify(PDF_CONFIG);
-        var config = iframe.contentWindow.JSON.parse(_cfgSrc);
-        config.filename = nomeArq;
+        /* FIX: injeta o config como literal JS no realm do iframe para que
+           o array margin seja criado com o Array constructor correto.
+           JSON.parse cross-frame ainda pode falhar em html2pdf.js porque
+           ele checa obj.constructor === Array (não Array.isArray). */
+        var cfgScript = iDoc.createElement('script');
+        cfgScript.textContent = 'window._PDFCFG = {'
+          + 'margin:[8,8,12,8],'
+          + 'image:{type:"jpeg",quality:0.96},'
+          + 'html2canvas:{scale:2,useCORS:true,logging:false,windowWidth:730,scrollY:0,allowTaint:false,letterRendering:true},'
+          + 'jsPDF:{unit:"mm",format:"a4",orientation:"portrait",compress:true},'
+          + 'pagebreak:{mode:["avoid-all","css","legacy"]},'
+          + 'filename:' + JSON.stringify(nomeArq)
+          + '};';
+        iDoc.head.appendChild(cfgScript);
+        var config = iframe.contentWindow._PDFCFG;
 
         worker.set(config)
           .from(el)

@@ -620,6 +620,18 @@ function _gerarHTMLStr(id) {
     }
 
     /* ── Assinatura ── */
+    /* Fiscal responsável + demais fiscais ativos da mesma região */
+    var _outrosFiscais = (typeof US !== 'undefined' ? US : []).filter(function(u) {
+      return u.ativo && u.reg === i.reg && u.nome !== fiscalNome;
+    });
+    var _outrosAssHtml = _outrosFiscais.map(function(u) {
+      return '<div class="ass-box"><div class="ass-title">Fiscal da Região</div>'
+        + '<div class="ass-linha"></div>'
+        + '<div class="ass-nome">' + _safe(u.nome) + '</div>'
+        + '<div class="ass-cargo">' + _safe(u.cargo || 'Fiscal de Contrato – TJMG / COMAP-GEMAP-DENGEP') + '</div>'
+        + (u.mat ? '<div class="ass-mat">Mat. ' + _safe(u.mat) + '</div>' : '')
+        + '</div>';
+    }).join('');
     var assHtml = '<div class="ass-wrap">'
       + '<div class="ass-box"><div class="ass-title">Fiscal Responsável</div>'
       + '<div class="ass-linha"></div>'
@@ -627,6 +639,7 @@ function _gerarHTMLStr(id) {
       + '<div class="ass-cargo">' + fiscalCargo + '</div>'
       + (i.mat ? '<div class="ass-mat">Mat. ' + i.mat + '</div>' : '')
       + '</div>'
+      + _outrosAssHtml
       + '<div class="ass-box"><div class="ass-title">Gestor de Contrato</div>'
       + '<div class="ass-linha"></div>'
       + '<div class="ass-nome">________________________________</div>'
