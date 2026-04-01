@@ -1707,6 +1707,11 @@ function admExpSel(){
   if(!ids.length){Tt('Nenhuma finalizada selecionada');return;}
   ids.forEach(function(id,idx){setTimeout(function(){exportHTML(id);},idx*600);});
 }
+function coordExpSelPDF(){
+  var ids=S._coordSel||[];
+  if(!ids.length){Tt('Selecione ao menos uma inspeção.');return;}
+  exportPDFBatch(ids);
+}
 function iniciarProgramada(){
   var osps=filterByReg(S.insp).filter(function(i){return i.tipo==='osp';});
   if(!osps.length){iniciarF('programada');return;}

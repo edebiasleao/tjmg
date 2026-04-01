@@ -38,7 +38,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 var PDF_CONFIG = {
-  margin:       { top: 8, left: 8, bottom: 12, right: 8 },   /* mm */
+  margin:       [8, 8, 12, 8],   /* top, left, bottom, right (mm) */
   image:        { type: 'jpeg', quality: 0.96 },
   html2canvas:  {
     scale:        2,
@@ -193,7 +193,12 @@ function _gerarPDFDoIframe(iframe, nomeArq, resolve, reject) {
     script.onload = function() {
       try {
         var worker = iframe.contentWindow.html2pdf();
-        var config = JSON.parse(JSON.stringify(PDF_CONFIG));
+        /* IMPORTANT: use the iframe's own JSON.parse — html2pdf.js checks
+           obj.constructor === Array (not Array.isArray), so arrays must
+           be created inside the iframe's JS realm or the cross-frame
+           constructor mismatch will throw "Invalid margin array". */
+        var _cfgSrc = JSON.stringify(PDF_CONFIG);
+        var config = iframe.contentWindow.JSON.parse(_cfgSrc);
         config.filename = nomeArq;
 
         worker.set(config)

@@ -260,9 +260,3 @@ window.coordExpSel    = coordExpSel;
 window.openDetCoord   = openDetCoord;
 window.cancelPin      = cancelPin;
 window.coordExpSelPDF = coordExpSelPDF;
-
-function coordExpSelPDF(){
-  var ids=S._coordSel||[];
-  if(!ids.length){Tt('Selecione ao menos uma inspeção.');return;}
-  exportPDFBatch(ids);
-}
