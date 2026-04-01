@@ -38,7 +38,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 var PDF_CONFIG = {
-  margin:       [8, 8, 12, 8],   /* top, left, bottom, right (mm) */
+  margin:       { top: 8, left: 8, bottom: 12, right: 8 },   /* mm */
   image:        { type: 'jpeg', quality: 0.96 },
   html2canvas:  {
     scale:        2,
