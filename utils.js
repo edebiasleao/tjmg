@@ -9,8 +9,8 @@
 // ============================================================
 
 function ini(n){if(!n)return'';var p=(n+'').split(' ').filter(function(x){return x.length>0;}).slice(0,2);return p.map(function(x){return x[0].toUpperCase();}).join('');}
-function fdt(x){try{return new Date(x).toLocaleDateString('pt-BR');}catch(e){return'-';}}
-function fdth(x){try{return new Date(x).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'-';}}
+function fdt(x){if(x==null)return'-';try{var d=new Date(x);if(isNaN(d.getTime()))return'-';return d.toLocaleDateString('pt-BR');}catch(e){return'-';}}
+function fdth(x){if(x==null)return'-';try{var d=new Date(x);if(isNaN(d.getTime()))return'-';return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'-';}}
 function uid(){if(crypto&&crypto.randomUUID)return crypto.randomUUID();return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function Tt(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
 function cm(id){document.getElementById(id).style.display='none';}
@@ -88,3 +88,16 @@ window.canDelInsp    = canDelInsp;
 window.filterByReg   = filterByReg;
 window.pciSt         = pciSt;
 window.pciDataForUser= pciDataForUser;
+
+// ── Helpers de inputs numéricos (movido do inline do index.html — Bug 4 fix) ──
+function _spf(v){return parseFloat(((v||'')+'').replace(',','.'))||0;}
+function _iCor(v,min){if(!v)return '#e2e8f0';return _spf(v)>=min?'#16a34a':'#dc2626';}
+function _iLbl(v,min){if(!v)return 'min. '+min;return _spf(v)>=min?'OK':'FORA';}
+function _iCorMax(v,w,crit){if(!v)return '#e2e8f0';var n=_spf(v);return n>crit?'#dc2626':n>w?'#f59e0b':'#16a34a';}
+function _iLblMax(v,w,crit){if(!v)return 'max. '+w;var n=_spf(v);return n>crit?'CRÍTICO':n>w?'ATENÇÃO':'OK';}
+
+window._spf       = _spf;
+window._iCor      = _iCor;
+window._iLbl      = _iLbl;
+window._iCorMax   = _iCorMax;
+window._iLblMax   = _iLblMax;

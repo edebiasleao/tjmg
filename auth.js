@@ -1,5 +1,6 @@
 'use strict';
 // ============================================================
+function _escA(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // auth.js — Autenticação, Logout e Telas de Coordenação
 // TJMG Fiscal PWA — Fase 4 da modularização
 // Dependências: state.js (S, US, ADM, COORD, REG, TIPOS),
@@ -29,8 +30,8 @@ function rLogin(){
       h+='<div class="card" onclick="openPin(\''+u.id+'\')" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">';
       h+='<div class="av" style="width:42px;height:42px;font-size:14px;background:'+R.c+';">'+ini(u.nome)+'</div>';
       h+='<div style="flex:1;">';
-      h+='<div style="font-size:13px;font-weight:700;">'+u.nome+'</div>';
-      h+='<div style="font-size:11px;color:#64748b;">'+u.cargo+' - '+u.polo+'</div>';
+      h+='<div style="font-size:13px;font-weight:700;">'+_escA(u.nome)+'</div>';
+      h+='<div style="font-size:11px;color:#64748b;">'+_escA(u.cargo)+' - '+_escA(u.polo)+'</div>';
       h+='</div>';
       h+='<span class="bdg" style="background:'+R.bg+';color:'+R.c+';">'+R.l+'</span>';
       h+='</div>';
@@ -47,6 +48,7 @@ function openPin(id){
   el('perr').textContent='';rpd();el('m-pin').style.display='flex';
 }
 function rpd(){for(var i=0;i<4;i++)el('pd'+i).classList.toggle('on',i<_pbuf.length);}
+function cancelPin(){_pbuf="";_pid="";rpd();cm("m-pin");}
 function kp(n){if(n===-1){_pbuf=_pbuf.slice(0,-1);rpd();el('perr').textContent='';return;}if(_pbuf.length<4){_pbuf+=String(n);rpd();if(_pbuf.length===4)setTimeout(doLogin,120);}}
 function kpOK(){doLogin();}
 function doLogin(){
@@ -109,6 +111,7 @@ function rCoord(){
       selBar.innerHTML='<div style="background:#7c3aed;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
         +'<span style="font-size:12px;font-weight:800;color:#fff;flex:1;">'+nSel+' selecionada(s)</span>'
         +'<button onclick="coordExpSel()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;">📄 Exportar HTML</button>'
+        +'<button onclick="coordExpSelPDF()" style="background:#1a2332;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;">📄 Exportar PDF</button>'
         +'<button onclick="S._coordSel=[];rCoord()" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:11px;cursor:pointer;">✕ Limpar</button>'
         +'</div>';
     }else{selBar.style.display='none';selBar.innerHTML='';}
@@ -128,7 +131,8 @@ function rCoord(){
     var reg=i.reg||'';var R=REG[reg]||{c:'#64748b',bg:'#f1f5f9',l:reg};
     var sel=S._coordSel.indexOf(i.id)!==-1;
     var fin=i.st==='finalizada';
-    return'<div class="card" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;border:2px solid '+(sel?'#7c3aed':'transparent')+';cursor:pointer;" onclick="coordToggleSel(\''+i.id+'\')">'      +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(sel?'#7c3aed':'#cbd5e1')+';background:'+(sel?'#7c3aed':'#fff')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff;">'+(sel?'✓':'')+'</div>'      +'<div style="width:34px;height:34px;border-radius:9px;background:'+t.bg+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+t.i+'</div>'      +'<div style="flex:1;min-width:0;">'        +'<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+i.edif+'</div>'        +'<div style="font-size:10px;color:#64748b;">'+(i.com||'-')+' · '+fdt(i.dtVistoria||i.data)+'</div>'        +'<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;">'          +'<span class="bdg" style="background:'+t.bg+';color:'+t.c+';">'+t.l+'</span>'          +'<span class="bdg" style="background:'+st.bg+';color:'+st.c+';">'+st.l+'</span>'          +(reg?'<span class="bdg" style="background:'+R.bg+';color:'+R.c+';">'+R.l+'</span>':'')+'</div>'      +'</div>'      +'<div style="display:flex;flex-direction:column;gap:4px;" onclick="event.stopPropagation();">'        +'<button class="btn bo" style="padding:5px 10px;width:auto;font-size:11px;" onclick="openDet(\''+i.id+'\')">👁 Ver</button>'        +(fin?'<button class="btn" style="padding:5px 10px;width:auto;font-size:11px;background:#003580;color:#fff;" onclick="exportHTML(\''+i.id+'\')">📄 HTML</button>':'')+'</div>'    +'</div>';
+    return'<div class="card" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;border:2px solid '+(sel?'#7c3aed':'transparent')+';cursor:pointer;" onclick="coordToggleSel(\''+i.id+'\')">'      +'<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(sel?'#7c3aed':'#cbd5e1')+';background:'+(sel?'#7c3aed':'#fff')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff;">'+(sel?'✓':'')+'</div>'      +'<div style="width:34px;height:34px;border-radius:9px;background:'+t.bg+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+t.i+'</div>'      +'<div style="flex:1;min-width:0;">'        +'<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_escA(i.edif)+'</div>'        +'<div style="font-size:10px;color:#64748b;">'+_escA(i.com||'-')+' · '+fdt(i.dtVistoria||i.data)+'</div>'        +'<div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;">'          +'<span class="bdg" style="background:'+t.bg+';color:'+t.c+';">'+t.l+'</span>'          +'<span class="bdg" style="background:'+st.bg+';color:'+st.c+';">'+st.l+'</span>'          +(reg?'<span class="bdg" style="background:'+R.bg+';color:'+R.c+';">'+R.l+'</span>':'')+'</div>'      +'</div>'      +'<div style="display:flex;flex-direction:column;gap:4px;" onclick="event.stopPropagation();">'        +'<button class="btn bo" style="padding:5px 10px;width:auto;font-size:11px;" onclick="openDet(\''+i.id+'\')">👁 Ver</button>'        +(fin?'<button class="btn" style="padding:5px 10px;width:auto;font-size:11px;background:#003580;color:#fff;" onclick="exportHTML(\''+i.id+'\')">📄 HTML</button>':'')
+      +(fin?'<button class="btn" style="padding:5px 10px;width:auto;font-size:11px;background:#1a2332;color:#fff;margin-left:3px;" onclick="exportPDF(\''+i.id+'\')">📄 PDF</button>':'')+'</div>'    +'</div>';
   }
   if(r2.length){h+='<div class="sec" style="padding:10px 12px 4px;">Rascunhos ('+r2.length+')</div>';h+=r2.map(_crd).join('');}
   if(e2.length){h+='<div class="sec" style="padding:10px 12px 4px;margin-top:'+(r2.length?'8':'0')+'px">Enviados ('+e2.length+')</div>';h+=e2.map(_crd).join('');}
@@ -231,6 +235,7 @@ function openDetCoord(id){
     h+='</div></div>';
   }
   h+='<button class="btn" style="background:'+_cor+';color:#fff;" onclick="exportHTML(\''+id+'\')">&#128196; Exportar HTML</button>';
+  h+='<button class="btn" style="background:#1a2332;color:#fff;margin-top:6px;" onclick="exportPDF(\''+id+'\')">📄 Exportar PDF</button>';
   h+='<div style="height:16px;"></div>';
   el('dbody').innerHTML=h;
   if(i.tipo==='prontuario'){el('dbody').innerHTML=renderDetPron(i);}
@@ -253,3 +258,5 @@ window.coordToggleSel = coordToggleSel;
 window.coordSelAll    = coordSelAll;
 window.coordExpSel    = coordExpSel;
 window.openDetCoord   = openDetCoord;
+window.cancelPin      = cancelPin;
+window.coordExpSelPDF = coordExpSelPDF;

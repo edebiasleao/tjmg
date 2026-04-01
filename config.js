@@ -6,15 +6,17 @@
 // Variáveis são globais (var) — compatível com classic scripts.
 // ============================================================
 
-// VERSÃO CENTRALIZADA — v65
+// VERSÃO CENTRALIZADA — v69
 // Manter em sincronia com sw.js (const V) e manifest.json (start_url ?v=)
 // ------------------------------------------------------------
-var APP_VERSION = 'v65';
+var APP_VERSION = 'v71';
 /* US é sempre populado por DB.ld() — não pré-definir aqui evita divergência
    entre duas fontes de verdade e elimina o risco de dados obsoletos serem
    enviados ao Supabase antes do pull inicial. */
 var US=[];
+/* ⚠ SEGURANÇA: credenciais expostas no cliente. Em produção, migrar para autenticação via Supabase Auth. */
 var ADM={u:'admin',p:'1530'};
+/* ⚠ Idem acima — credenciais de coordenador expostas. */
 var COORD={u:'coord',p:'2026'};
 var REG={NORTE:{l:'Norte',ct:'CT 017-2026',c:'#2563eb',bg:'#dbeafe'},CENTRAL:{l:'Central',ct:'CT 025-2026',c:'#7c3aed',bg:'#ede9fe'},LESTE:{l:'Leste',ct:'CT 019-2026',c:'#16a34a',bg:'#dcfce7'},ZONA_MATA:{l:'Zona da Mata',ct:'CT 018-2026',c:'#b45309',bg:'#fef3c7'},TRIANGULO:{l:'Tri\u00e2ngulo',ct:'CT 392-2022',c:'#0891b2',bg:'#cffafe'},SUL:{l:'Sul',ct:'CT 138-2023',c:'#be185d',bg:'#fce7f3'},SUDOESTE:{l:'Sudoeste',ct:'CT 421-2022',c:'#65a30d',bg:'#ecfccb'}};
 var TIPOS={
@@ -47,3 +49,6 @@ var SIS=[
   {id:'6',n:'6.0',nm:'Bombeamento e Motoriza\u00e7\u00f5es'},
   {id:'7',n:'7.0',nm:'Infraestrutura de GLP'}
 ];
+
+// ── TCOR: Cores por tipo de relatório (movido do inline do index.html — Bug 2 fix) ──
+var TCOR={periodica:'#003580',ose:'#dc2626',programada:'#2563eb',fachada:'#7c3aed',spda:'#d97706',prontuario:'#0369a1',subestacao:'#b45309',osp:'#0f766e'};

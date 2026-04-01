@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================
-// sync.js — Objeto Sync: push/pull Supabase via Edge Function
+// sync.js — Objeto Sync: push/pull Supabase via Edge Function (v70 bugfixes)
 // TJMG Fiscal PWA — Fase 2 da modularização
 // Dependências (globais): S, US, SB, SUPABASE_URL,
 //   SUPABASE_PUBLISHABLE_KEY, EDGE_SYNC_URL, SYNC_SECRET
@@ -45,7 +45,7 @@ var Sync={
     var _30d=Date.now()-30*24*60*60*1000;
     this.deletedInsps=this.deletedInsps.filter(function(e){
       /* suporte a formato antigo (string pura) e novo ({id,_t}) */
-      if(typeof e==='string')return true; /* manter formato antigo até substituir */
+      if(typeof e==='string')return false; /* v71: purga entradas legadas sem timestamp */
       return e&&e._t&&e._t>_30d;
     });
     /* Limite absoluto de segurança: 500 entradas */
@@ -158,6 +158,8 @@ var Sync={
       edificacao:i.edif||'',
       regiao:i.reg||'',
       fiscal:i.fiscal||'',
+      status:i.st||'',        /* v69-fix: sincroniza status com o banco */
+      protocolo:i.protocolo||'', /* v69-fix: sincroniza protocolo com o banco */
       _fotosSync:true, /* marca que este payload tem thumbs */
       payload:payloadLimpo,
       updated_at:new Date().toISOString()
@@ -386,6 +388,8 @@ var Sync={
     var toSync=S.insp.filter(function(i){
       if(i.st==='em_andamento')return true;
       if(!i.updated_at)return true;
+      /* v70-fix Bug3: inspeções finalizadas nunca confirmadas pelo servidor sempre entram no push */
+      if(i.st==='finalizada'&&!i.synced_at){console.warn('[Sync] Inspeção finalizada sem synced_at incluída no push:',i.id);return true;}
       return i.updated_at>=cutoff;
     });
 
@@ -399,11 +403,13 @@ var Sync={
       var resp=await fetch(EDGE_SYNC_URL+'/push',{
         method:'POST',
         headers:_hPush,
-        body:JSON.stringify({inspections:rows,deleteInsps:_idsParaDel,users:[],deleteUsers:[]})
+        body:JSON.stringify({inspections:rows,deleteInsps:_idsParaDel,users:US.map(Sync.normalizeUser.bind(Sync)),deleteUsers:Sync.deletedUsers.slice()})
       });
       if(!resp.ok)throw new Error('Edge push HTTP '+resp.status);
       var d=await resp.json();
       if(!d.ok)throw new Error(d.error||'Edge push erro');
+      /* v70-fix Bug1: limpa filas de deleção após push Edge bem-sucedido */
+      this.deletedUsers=[];
       /* ── Marca localmente as inspeções confirmadas pelo servidor ── */
       var _nowEdge=new Date().toISOString();
       toSync.forEach(function(i){

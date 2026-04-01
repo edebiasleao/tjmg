@@ -141,7 +141,7 @@ var DB={
         if(insp.sub)return PhotoStore.loadSubAll(insp.id,insp.sub);
       });
     })).catch(function(){});}
-    var s=localStorage.getItem('ts');if(s){var d=JSON.parse(s);if(Date.now()-(d._t||0)<28800000)S.sessao=d;else localStorage.removeItem('ts');}
+    var s=localStorage.getItem('ts');if(s){var d=JSON.parse(s);if(Date.now()-(d._t||0)<28800000){S.sessao=d;}else{localStorage.removeItem('ts');setTimeout(function(){try{Tt('Sessão expirada. Faça login novamente.');}catch(e){}},1500);}}
     /* Atualiza US com dados do Supabase/pull que possam ter chegado via mergeRemoteUsers */
     }catch(e){console.warn('[DB.ld] erro async (inspeções/sessão):',e);}
   }

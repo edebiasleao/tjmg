@@ -1,10 +1,10 @@
-/* TJMG Fiscal — Service Worker v68
+/* TJMG Fiscal — Service Worker v71
    Estratégia:
    - App shell (index.html, sw.js, manifest.json, js/*.js) → network-first, fallback cache
    - Demais assets → cache-first, atualiza cache em background
    - Domínios externos (Supabase, CDN, Google) → nunca interceptados
 
-   v69: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
+   v71: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
         index.html: 4791 → 4470 linhas (−321 / −7%).
         v68: Fase 3 — report-html.js extraído do index.html.
         Funções removidas do index: exportHTML, _gerarHTMLStr, _doExportHTML,
@@ -16,11 +16,14 @@
         index.html: 5663 → 4791 linhas (−872 / −15%).
 */
 
-const V = 'tjmg-v69';
+const V = 'tjmg-v71';
 const CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.ico',
+  './icon-192.png',
+  './icon-512.png',
   /* ── Fase 1: módulos extraídos ── */
   './config.js',
   './data.js',
@@ -31,6 +34,7 @@ const CACHE = [
   './db.js',
   /* ── Fase 3: geração de relatórios HTML ── */
   './report-html.js',
+  './report-pdf.js',
   /* ── Fase 4: utils, router, auth ── */
   './utils.js',
   './router.js',

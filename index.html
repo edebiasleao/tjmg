@@ -197,6 +197,7 @@ input:focus,textarea:focus{border-color:var(--a);}
     <button class="btn ba" style="margin-top:16px;width:100%;" onclick="G('s-home');rHome();">&#127968; Voltar ao Inicio</button>
     <button class="btn boa" style="width:100%;" onclick="navt('rel')">&#128196; Ver Historico</button>
     <button class="btn bo" style="width:100%;margin-top:4px;" onclick="if(F&&F.id)exportHTML(F.id)">&#128196; Exportar HTML</button>
+    <button class="btn" style="width:100%;margin-top:4px;background:#1a2332;color:#fff;" onclick="if(F&&F.id)exportPDF(F.id)">&#128196; Exportar PDF</button>
   </div>
 </div>
 
@@ -218,7 +219,7 @@ input:focus,textarea:focus{border-color:var(--a);}
       <button class="key bk" onclick="kp(-1)">&#9003;</button><button class="key" onclick="kp(0)">0</button>
       <button class="key ok" onclick="kpOK()">&#10003;</button>
     </div>
-    <button class="btn bo" style="margin-top:12px;" onclick="cm('m-pin')">Cancelar</button>
+    <button class="btn bo" style="margin-top:12px;" onclick="cancelPin()">Cancelar</button>
   </div>
 </div>
 
@@ -355,8 +356,9 @@ input:focus,textarea:focus{border-color:var(--a);}
 <script src="photo-store.js"></script>
 <script src="sync.js"></script>
 <script src="db.js"></script>
-<script src="report-html.js"></script>
 <script src="utils.js"></script>
+<script src="report-html.js"></script>
+<script src="report-pdf.js"></script>
 <script src="router.js"></script>
 <script src="auth.js"></script>
 
@@ -370,7 +372,6 @@ input:focus,textarea:focus{border-color:var(--a);}
 //   photo-store.js → PhotoStore (IndexedDB)
 //   sync.js        → Sync (push/pull Supabase)
 //   db.js          → DB (persistência local) + autoSave
-// TODO Fase 3: mover _gerarHTMLStr para report-html.js
 // TODO Fase 4: mover utils, G/Gb/navt, auth para utils.js, router.js, auth.js
 // TODO Fase 5: converter para <script type="module" src="main.js">
 // ─────────────────────────────────────────────────────────────────────────
@@ -1078,6 +1079,7 @@ function _renderDet(id){
     if(i.st==='em_andamento')h+='<button class="btn ba" onclick="finalizarI(\''+id+'\')">Finalizar Inspecao</button>';
     if(i.st==='finalizada')h+='<button class="btn" style="background:#f59e0b;color:#fff;margin-bottom:8px;" onclick="editarRelatorio(\''+id+'\')">✏️ Editar Relatório</button>';
     h+='<button class="btn" style="background:#b45309;color:#fff;" onclick="exportHTMLSub(\''+id+'\')">Exportar HTML</button>';
+    h+='<button class="btn" style="background:#1a2332;color:#fff;margin-top:4px;" onclick="exportPDFSub(\''+id+'\')">📄 Exportar PDF</button>';
     h+='<div style="height:16px;"></div>';
     el('dbody').innerHTML=h;G('s-det');return;
   }
@@ -1200,7 +1202,8 @@ function _renderDet(id){
 
     if(i.st==='em_andamento')h+='<button class="btn ba" onclick="finalizarI(\''+id+'\')">Finalizar Inspeção</button>';
     if(i.st==='finalizada')h+='<button class="btn" style="background:#f59e0b;color:#fff;margin-bottom:8px;" onclick="editarRelatorio(\''+id+'\')">✏️ Editar Relatório</button>';
-    h+='<button class="btn bo" onclick="exportHTML(\''+id+'\')">Exportar HTML</button><div style="height:16px;"></div>';
+    h+='<button class="btn bo" onclick="exportHTML(\''+id+'\')">Exportar HTML</button>';
+    h+='<button class="btn" style="background:#1a2332;color:#fff;margin-top:4px;" onclick="exportPDF(\''+id+'\')">📄 Exportar PDF</button><div style="height:16px;"></div>';
 
   } else {
     /* ── Lógica original para Periódica / Fachada / SPDA ── */
@@ -1233,7 +1236,8 @@ function _renderDet(id){
     });
     if(i.st==='em_andamento')h+='<button class="btn ba" onclick="finalizarI(\''+id+'\')">Finalizar Inspecao</button>';
     if(i.st==='finalizada')h+='<button class="btn" style="background:#f59e0b;color:#fff;margin-bottom:8px;" onclick="editarRelatorio(\''+id+'\')">✏️ Editar Relatório</button>';
-    h+='<button class="btn bo" onclick="exportHTML(\''+id+'\')">Exportar HTML</button><div style="height:16px;"></div>';
+    h+='<button class="btn bo" onclick="exportHTML(\''+id+'\')">Exportar HTML</button>';
+    h+='<button class="btn" style="background:#1a2332;color:#fff;margin-top:4px;" onclick="exportPDF(\''+id+'\')">📄 Exportar PDF</button><div style="height:16px;"></div>';
   }
 
   var _canDel=canDelInsp(i);
@@ -1438,6 +1442,7 @@ function saveItem(){
   }
 }
 function finalizarI(id){cf('OK','Finalizar','Marcar como finalizada?',function(){
+  stopAutoSave(); // v69-fix: para o timer antes de sair do formulário
   var i=S.insp.find(function(x){return x.id===id;});
   if(i){i.st='finalizada';i.updated_at=new Date().toISOString();if(!i.protocolo)i.protocolo=gerarProtocolo(i);DB.sv();}
   var _prot=i&&i.protocolo?i.protocolo:'';
@@ -1546,6 +1551,7 @@ function rAdm(){
         +'<div style="display:flex;flex-direction:column;gap:4px;" onclick="event.stopPropagation();">'
         +'<button class="btn bo" style="padding:6px 10px;width:auto;font-size:11px;" onclick="openDet(\''+i.id+'\')">👁 Ver</button>'
         +'<button class="btn" style="padding:6px 10px;width:auto;font-size:11px;background:#003580;color:#fff;" onclick="exportHTML(\''+i.id+'\')">📄 HTML</button>'
+        +'<button class="btn" style="padding:6px 10px;width:auto;font-size:11px;background:#1a2332;color:#fff;margin-left:4px;" onclick="exportPDF(\''+i.id+'\')">📄 PDF</button>'
         +'</div></div>';
     });
 
@@ -1595,7 +1601,7 @@ function rAdm(){
 }
 
 
-var TCOR={periodica:'#003580',ose:'#dc2626',programada:'#2563eb',fachada:'#7c3aed',spda:'#d97706',prontuario:'#0369a1',subestacao:'#b45309',osp:'#0f766e'};
+/* v70: TCOR movido para config.js — Bug 2 fix */
 
 var _uEditId=null;
 var _uAtivo=true;
@@ -1700,6 +1706,11 @@ function admExpSel(){
   var ids=S._admSel.filter(function(id){var i=S.insp.find(function(x){return x.id===id;});return i&&i.st==='finalizada';});
   if(!ids.length){Tt('Nenhuma finalizada selecionada');return;}
   ids.forEach(function(id,idx){setTimeout(function(){exportHTML(id);},idx*600);});
+}
+function coordExpSelPDF(){
+  var ids=S._coordSel||[];
+  if(!ids.length){Tt('Selecione ao menos uma inspeção.');return;}
+  exportPDFBatch(ids);
 }
 function iniciarProgramada(){
   var osps=filterByReg(S.insp).filter(function(i){return i.tipo==='osp';});
@@ -3223,100 +3234,7 @@ function subAtualizaEtapas(){
   }
 }
 
-// ── SUB_SECOES com IDs exatos do Anexo B.1 ────────────────────────────────────
-var SUB_SECOES=[
-  {id:'A',n:'Segurança e NR-10',sempre:true,itens:[
-    {id:'chk_seg_nr10',d:'Procedimentos de segurança NR-10 executados (credenciamento, EPI, LOTO)'},
-    {id:'chk_seg_aterramento_temp',d:'Aterramento temporário instalado antes dos serviços'},
-    {id:'chk_seg_desenergizacao',d:'Instalação desenergizada, aterrada e sinalizada'},
-    {id:'chk_seg_concessionaria',d:'Contato e agendamento com concessionária local realizado'},
-    {id:'chk_seg_cargas_deslig',d:'Todas as cargas elétricas desligadas antes da manobra'},
-    {id:'chk_seg_prontuario_nr10',d:'Prontuário de Instalações Elétricas (NR-10) verificado e atualizado'}
-  ]},
-  {id:'B',n:'Transformadores',sempre:true,itens:[
-    {id:'chk_tr_desconexao',d:'Entrada e saída de energia desconectadas'},
-    {id:'chk_tr_limpeza',d:'Limpeza completa de isoladores, suportes, abas, parafusos e aletas'},
-    {id:'chk_tr_inspecao_ext',d:'Inspeção minuciosa do exterior do transformador e adjacências'},
-    {id:'chk_tr_vazamentos',d:'Verificação e ausência de vazamentos de óleo'},
-    {id:'chk_tr_trincas_buchas',d:'Buchas inspecionadas — sem trincas, fissuras ou contaminações'},
-    {id:'chk_tr_instrumentos',d:'Instrumentos e acessórios inspecionados (termômetros, indicadores de nível)'},
-    {id:'chk_tr_reaperto',d:'Reaperto de todas as conexões elétricas'},
-    {id:'chk_tr_aterramento_conexoes',d:'Conexões de aterramento verificadas'},
-    {id:'chk_tr_iso_cc',d:'Ensaio de resistência de isolamento (corrente contínua)'},
-    {id:'chk_tr_ohmica',d:'Ensaio de resistência ôhmica dos enrolamentos (variação ≤ 3%)'},
-    {id:'chk_tr_ttr',d:'Ensaio da relação de transformação (TTR)'},
-    {id:'chk_tr_oleo_coleta',d:'[ANUAL] Óleo coletado para análise antes da manutenção',anual:true},
-    {id:'chk_tr_oleo_analise_fq',d:'[ANUAL] Análise físico-química (rigidez dielétrica, teor de água, fator de potência, índice de neutralização, tensão interfacial, densidade, cor)',anual:true},
-    {id:'chk_tr_oleo_cromatografia',d:'[ANUAL] Análise cromatográfica (C₂H₂, C₂H₄, H₂, CO, CO₂, CH₄)',anual:true},
-    {id:'chk_tr_oleo_nivel',d:'[ANUAL] Nível de óleo verificado e complementado',anual:true},
-    {id:'chk_tr_prateamento',d:'[ANUAL] Pontos de contato com desgaste de camada prateada tratados',anual:true},
-    {id:'chk_tr_reconexao',d:'Entradas e saídas reconectadas após ensaios'}
-  ]},
-  {id:'CD',n:'Disjuntores de Média Tensão',sempre:true,itens:[
-    {id:'chk_dj_inspecao_ext',d:'Inspeção externa e limpeza geral'},
-    {id:'chk_dj_mecanismo',d:'Mecanismo de comando inspecionado, limpo e lubrificado'},
-    {id:'chk_dj_conexoes',d:'Conexões reapertadas com torque adequado'},
-    {id:'chk_dj_oleo_pvo',d:'[PVO] Óleo mineral parafínico substituído (ABNT IEC 60296)',pvo:true},
-    {id:'chk_dj_grandezas',d:'Grandezas elétricas características ensaiadas'},
-    {id:'chk_dj_resist_contato',d:'Resistência de contato ensaiada (R, S, T)'},
-    {id:'chk_dj_iso',d:'Resistência de isolamento ensaiada (aberto e fechado)'},
-    {id:'chk_dj_operacao',d:'Operação do disjuntor testada (abertura e fechamento)'},
-    {id:'chk_dj_reles',d:'Relés primários ajustados'}
-  ]},
-  {id:'E',n:'Chaves Seccionadoras',sempre:true,itens:[
-    {id:'chk_sc_inspecao',d:'Inspeção e limpeza geral da chave'},
-    {id:'chk_sc_contatos',d:'Contatos desoxidados e polidos'},
-    {id:'chk_sc_lubrificacao',d:'Partes articuladas lubrificadas'},
-    {id:'chk_sc_resist_contato',d:'Resistência de contato ensaiada (R1-R2, S1-S2, T1-T2)'},
-    {id:'chk_sc_iso',d:'Resistência de isolamento ensaiada (aberta e fechada)'},
-    {id:'chk_sc_conexoes',d:'Conexões elétricas reapertadas'},
-    {id:'chk_sc_molas',d:'Pressão das molas ajustada'},
-    {id:'chk_sc_teste',d:'Operação da chave testada'}
-  ]},
-  {id:'G',n:'Muflas',anual:true,itens:[
-    {id:'chk_muf_visual',d:'Inspeção visual de todas as muflas'},
-    {id:'chk_muf_termico',d:'Medições com termômetro digital e imagens térmicas'},
-    {id:'chk_muf_limpeza',d:'Limpeza executada'},
-    {id:'chk_muf_iso',d:'Testes de isolamento realizados'}
-  ]},
-  {id:'H',n:'Relés Secundários',anual:true,abrigada:true,itens:[
-    {id:'chk_rel_operacional',d:'Condições operacionais de funcionamento verificadas'},
-    {id:'chk_rel_nobreak',d:'Nobreak verificado — baterias testadas e substituídas se necessário'},
-    {id:'chk_rel_configuracao',d:'Relés com perda de configuração reconfigurados'}
-  ]},
-  {id:'I',n:'Barramentos Blindados',anual:true,abrigada:true,itens:[
-    {id:'chk_bb_visual',d:'Inspeção visual em toda extensão dos barramentos, cofres, pluglins e conexões'},
-    {id:'chk_bb_torque',d:'Reaperto com torquímetro em emendas, cofres, derivações e conexões'},
-    {id:'chk_bb_limpeza',d:'Limpeza com soprador em toda extensão (remoção de poeira)'},
-    {id:'chk_bb_termico',d:'Medições termográficas para pontos de aquecimento'}
-  ]},
-  {id:'J',n:'Painéis Principais',anual:true,abrigada:true,itens:[
-    {id:'chk_pan_limpeza_geral',d:'Limpeza geral de barramentos, cubículos/celas, isoladores e painéis'},
-    {id:'chk_pan_reaperto',d:'Conexões elétricas (inclusive aterramento) reapertadas com torque adequado'},
-    {id:'chk_pan_limpeza_dependencias',d:'Dependências onde os painéis estão instalados limpas'},
-    {id:'chk_pan_parafusos',d:'Parafusos, conectores e terminais faltantes supridos'},
-    {id:'chk_pan_corrosao',d:'Corrosões tratadas e pintura de proteção aplicada'},
-    {id:'chk_pan_termico',d:'Inspeção com termômetro digital para pontos de aquecimento'},
-    {id:'chk_pan_iluminacao',d:'Iluminação interna dos painéis mantida em condições adequadas'},
-    {id:'chk_pan_coolers',d:'Coolers/exaustores inspecionados e em perfeito funcionamento'}
-  ]},
-  {id:'K',n:'Sala da Subestação',abrigada:true,itens:[
-    {id:'chk_sala_limpeza',d:'Limpeza das áreas internas, portas, portões, grades e pisos'},
-    {id:'chk_sala_grades_portas',d:'Grades, suportes metálicos, portas e portões — reparos de segurança executados'},
-    {id:'chk_sala_cadeados',d:'Cadeados nas portas, portões e grades inspecionados e repostos'},
-    {id:'chk_sala_ilum_geral',d:'Iluminação geral e de emergência inspecionadas — lâmpadas substituídas'},
-    {id:'chk_sala_limpeza_sup',d:'Limpeza da parte superior das cabines e painéis executada'},
-    {id:'chk_sala_conectores',d:'Conectores e terminais faltantes repostos'}
-  ]},
-  {id:'DOC',n:'Documentação e Relatório',sempre:true,itens:[
-    {id:'chk_rel_fotos',d:'Relatório fotográfico elaborado'},
-    {id:'chk_rel_valores',d:'Valores dos ensaios registrados no relatório técnico'},
-    {id:'chk_rel_conformidades',d:'Conformidades e não conformidades documentadas'},
-    {id:'chk_rel_corretivos',d:'Serviços corretivos detectados documentados'},
-    {id:'chk_rel_religacao',d:'Instalação reenergizada — todas as cargas restabelecidas'},
-    {id:'chk_rel_fiscalizacao',d:'Relatório a entregar à Fiscalização em até 10 dias úteis'}
-  ]}
-];
+/* v70: SUB_SECOES movido para data.js — Bug 2/4 fix */
 
 function subSecoesVisiveis(){
   var d=F.d||{};
@@ -3724,11 +3642,7 @@ function rFSubMedicoes(c){
 }
 
 // ── Helpers de inputs numéricos ───────────────────────────────────────────────
-function _spf(v){return parseFloat(((v||'')+'').replace(',','.'))||0;}
-function _iCor(v,min){if(!v)return '#e2e8f0';return _spf(v)>=min?'#16a34a':'#dc2626';}
-function _iLbl(v,min){if(!v)return 'min. '+min;return _spf(v)>=min?'OK':'FORA';}
-function _iCorMax(v,w,crit){if(!v)return '#e2e8f0';var n=_spf(v);return n>crit?'#dc2626':n>w?'#f59e0b':'#16a34a';}
-function _iLblMax(v,w,crit){if(!v)return 'max. '+w;var n=_spf(v);return n>crit?'CRÍTICO':n>w?'ATENÇÃO':'OK';}
+/* v70: _spf, _iCor, _iLbl, _iCorMax, _iLblMax movidos para utils.js — Bug 4 fix */
 function _inp(label,val,path,unit){
   return '<div><div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:3px;">'+label+'</div><div style="display:flex;align-items:center;gap:4px;"><input value="'+(val||'')+'" oninput="'+path+'=this.value;rFe()" type="text" inputmode="decimal" style="flex:1;border-radius:6px;border:1px solid #e2e8f0;padding:7px 6px;font-size:13px;font-weight:700;min-width:0;"><span style="font-size:10px;color:#64748b;font-weight:700;flex-shrink:0;">'+unit+'</span></div></div>';
 }
@@ -3887,6 +3801,7 @@ function rFConc(c){
     h+='<div class="card" style="margin-bottom:12px;border-left:4px solid '+pctCor+';"><div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px;">CHECKLIST ANEXO B.1</div><div style="font-size:26px;font-weight:900;color:'+pctCor+';">'+pct+'% <span style="font-size:12px;font-weight:600;color:#64748b;">('+marcados+'/'+totalItens+' itens)</span></div><div class="pb" style="margin-top:8px;"><div class="pf" style="width:'+pct+'%;background:'+pctCor+';"></div></div></div>';
     h+='<div class="card" style="margin-bottom:12px;"><div style="font-size:12px;color:#374151;margin-bottom:3px;"><b>Tipo:</b> '+(sub.tipo_sub||'—')+' | <b>Manutencao:</b> '+(sub.tipo_manutencao||'—')+'</div><div style="font-size:12px;color:#374151;"><b>Responsavel:</b> '+(sub.responsavel||'—')+'</div></div>';
     h+='<button class="btn" style="background:#b45309;color:#fff;margin-bottom:8px;" onclick="exportHTMLSub(\''+F.id+'\')">Exportar HTML</button>';
+    h+='<button class="btn" style="background:#1a2332;color:#fff;margin-bottom:8px;" onclick="exportPDFSub(\''+F.id+'\')">📄 Exportar PDF</button>';
     if(F.d.com&&F.d.com.trim())h+='<button class="btn bg2" onclick="finalizarI(\''+F.id+'\')">Finalizar e Salvar</button>';
     c.innerHTML=h;return;
   }
@@ -4312,6 +4227,7 @@ function renderDetPron(insp){
 
   h+='<button class="btn" style="background:#0f766e;color:#fff;margin-bottom:8px;" onclick="editarPron(\''+insp.id+'\')">✏️ Editar Documentos</button>';
   h+='<button class="btn" style="background:#0369a1;color:#fff;" onclick="exportHTML(\''+insp.id+'\')">📄 Exportar HTML</button>';
+  h+='<button class="btn" style="background:#1a2332;color:#fff;margin-top:6px;" onclick="exportPDF(\''+insp.id+'\')">📄 Exportar PDF</button>';
   h+='<div style="height:16px;"></div>';
   return h;
 }
