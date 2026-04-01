@@ -1,22 +1,16 @@
-/* TJMG Fiscal — Service Worker v71
-   Estratégia:
-   - App shell (index.html, sw.js, manifest.json, js/*.js) → network-first, fallback cache
-   - Demais assets → cache-first, atualiza cache em background
-   - Domínios externos (Supabase, CDN, Google) → nunca interceptados
-
+/* TJMG Fiscal — Service Worker v72
+   PWA-1/2: html2pdf.js e qrcode-generator agora cacheados pelo SW para uso offline.
+   v72: SEG-1/2 hashing, COD-1/2/3/4/5/6, PWA-1/2/3, ARQ-1/2/3 aplicados.
    v71: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
-        index.html: 4791 → 4470 linhas (−321 / −7%).
-        v68: Fase 3 — report-html.js extraído do index.html.
-        Funções removidas do index: exportHTML, _gerarHTMLStr, _doExportHTML,
-        exportHTMLSub, _gerarHTMLSubStr, _doExportHTMLSub, normProt,
-        gerarProtocolo, gerarTipoLbl, enviarParaDrive, uploadHtmlToSupabase,
-        enviarEmailRelatorio.
-        Melhorias: page-break corrigido para grades de fotos; relatório de
-        subestação redesenhado com identidade visual TJMG unificada.
-        index.html: 5663 → 4791 linhas (−872 / −15%).
 */
 
-const V = 'tjmg-v71';
+const V = 'tjmg-v72';
+
+/* PWA-1/2: libs CDN que precisam funcionar offline — cacheadas explicitamente. */
+const CDN_CACHE = [
+  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
+];
 const CACHE = [
   './',
   './index.html',
@@ -46,8 +40,8 @@ const BYPASS = [
   'googleapis.com',
   'gstatic.com',
   'firebase',
-  'cdn.jsdelivr.net',
-  'cdnjs.cloudflare.com',
+  /* PWA-1/2: cdnjs e jsdelivr removidos do BYPASS para permitir cache das libs offline.
+     As libs específicas são pré-cacheadas via CDN_CACHE no install. */
   'script.google.com',
   'dns.google'
 ];
@@ -56,7 +50,17 @@ const BYPASS = [
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(V).then(function(c) {
-      return c.addAll(CACHE);
+      /* App shell (same-origin) */
+      return c.addAll(CACHE).then(function() {
+        /* PWA-1/2: pré-cachear libs CDN para uso offline */
+        return Promise.all(CDN_CACHE.map(function(url) {
+          return fetch(url, {mode:'cors'}).then(function(r) {
+            if(r && r.ok) c.put(url, r);
+          }).catch(function(err) {
+            console.warn('[SW] CDN cache falhou para', url, err);
+          });
+        }));
+      });
     }).catch(function(err) {
       console.warn('[SW] install cache falhou:', err);
     })
@@ -90,7 +94,25 @@ self.addEventListener('fetch', function(e) {
   var url;
   try { url = new URL(e.request.url); } catch(err) { return; }
 
-  /* Ignora domínios externos */
+  /* PWA-1/2: interceptar libs CDN antes do check de origem */
+  var isCdnLib = CDN_CACHE.indexOf(e.request.url) !== -1;
+  if (isCdnLib) {
+    e.respondWith(
+      caches.match(e.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(e.request, {mode:'cors'}).then(function(r) {
+          if (r && r.ok) {
+            var copy = r.clone();
+            caches.open(V).then(function(c) { c.put(e.request, copy); });
+          }
+          return r;
+        });
+      })
+    );
+    return;
+  }
+
+  /* Ignora domínios externos (exceto CDN libs acima) */
   if (BYPASS.some(function(d) { return url.hostname.includes(d); })) return;
 
   /* Ignora outras origens */

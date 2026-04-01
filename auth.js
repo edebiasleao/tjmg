@@ -1,10 +1,9 @@
 'use strict';
 // ============================================================
-function _escA(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // auth.js — Autenticação, Logout e Telas de Coordenação
-// TJMG Fiscal PWA — Fase 4 da modularização
+// TJMG Fiscal PWA — v72
 // Dependências: state.js (S, US, ADM, COORD, REG, TIPOS),
-//               utils.js (el, cm, cf, Tt, fdt, oentries, ini),
+//               utils.js (el, cm, cf, Tt, fdt, oentries, ini, _escA, hashPin),
 //               router.js (G, Gb, BNS, bH),
 //               db.js (DB), report-html.js (exportHTML)
 // window-exports: rLogin, openPin, kp, kpOK, openAdm, loginAdm,
@@ -51,23 +50,31 @@ function rpd(){for(var i=0;i<4;i++)el('pd'+i).classList.toggle('on',i<_pbuf.leng
 function cancelPin(){_pbuf="";_pid="";rpd();cm("m-pin");}
 function kp(n){if(n===-1){_pbuf=_pbuf.slice(0,-1);rpd();el('perr').textContent='';return;}if(_pbuf.length<4){_pbuf+=String(n);rpd();if(_pbuf.length===4)setTimeout(doLogin,120);}}
 function kpOK(){doLogin();}
-function doLogin(){
+// SEG-2: doLogin assíncrono — compara hash SHA-256 do PIN digitado com o hash armazenado.
+async function doLogin(){
   var u=US.find(function(x){return x.id===_pid;});if(!u)return;
-  if(_pbuf!==u.pin){el('perr').textContent='PIN incorreto. Tente novamente.';_pbuf='';rpd();return;}
+  var h=await hashPin(_pbuf);
+  if(h!==u.pin){el('perr').textContent='PIN incorreto. Tente novamente.';_pbuf='';rpd();return;}
   S.sessao={tipo:'usuario',userId:u.id,nome:u.nome,mat:u.mat,reg:u.reg,cargo:u.cargo,polo:u.polo||'',_t:Date.now()};
   DB.sv();cm('m-pin');rHome();G('s-home');BNS.forEach(function(id){var e=el(id);if(e)e.innerHTML=bH('home');});
 }
 function openAdm(){el('au').value='';el('ap').value='';el('ae').textContent='';el('m-adm').style.display='flex';}
-function loginAdm(){
+// SEG-1: loginAdm assíncrono — compara hash da senha com ADM.p.
+async function loginAdm(){
   var u=el('au').value.trim();var p=el('ap').value.trim();
-  if(u===ADM.u&&p===ADM.p){S.sessao={tipo:'admin',userId:'admin',nome:'Administrador',reg:null,cargo:'Admin',polo:'',_t:Date.now()};DB.sv();cm('m-adm');rAdm();G('s-admin');}
+  var h=await hashPin(p);
+  if(u===ADM.u&&h===ADM.p){S.sessao={tipo:'admin',userId:'admin',nome:'Administrador',reg:null,cargo:'Admin',polo:'',_t:Date.now()};DB.sv();cm('m-adm');rAdm();G('s-admin');}
   else el('ae').textContent='Usuario ou PIN incorretos.';
 }
-function logout(){cf('X','Sair','Encerrar sua sessao?',function(){S.sessao=null;localStorage.removeItem('ts');rLogin();Gb('s-login');});}
+// COD-1: resetar _coordReg e _coordSel no logout evita que o próximo coordenador
+// herde filtros e seleções da sessão anterior.
+function logout(){cf('X','Sair','Encerrar sua sessao?',function(){S.sessao=null;S._coordReg='todos';S._coordSel=[];localStorage.removeItem('ts');rLogin();Gb('s-login');});}
 function openCoord(){el('cu').value='';el('cp').value='';el('ce').textContent='';el('m-coord').style.display='flex';}
-function loginCoord(){
+// SEG-1: loginCoord assíncrono — compara hash da senha com COORD.p.
+async function loginCoord(){
   var u=el('cu').value.trim();var p=el('cp').value.trim();
-  if(u===COORD.u&&p===COORD.p){
+  var h=await hashPin(p);
+  if(u===COORD.u&&h===COORD.p){
     S.sessao={tipo:'coordenador',userId:'coord',nome:'Coordenador',reg:null,cargo:'Coordenador',polo:'',_t:Date.now()};
     DB.sv();cm('m-coord');rCoord();G('s-coord');
   } else el('ce').textContent='Usuário ou PIN incorretos.';

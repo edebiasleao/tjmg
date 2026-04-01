@@ -379,9 +379,12 @@ input:focus,textarea:focus{border-color:var(--a);}
 
 
 
-// TJMG Fiscal PWA v69 - Fase 4: utils.js, router.js, auth.js modularizados
-// v68 - report-html.js modularizado (Fase 3): Drive/email removidos, page-break corrigido, subestação redesenhada
-// v63 - fix login tela branca (mergeRemoteUsers + bootApp background), syncManual botao home, sync auto 30min, Drive acao=cancelar - fix finalizarI bug (i→i.id em _gerarHTMLStr/_gerarHTMLSubStr), Drive getFolderById
+// TJMG Fiscal PWA v72 — Correções de segurança, qualidade e PWA
+// v72: SEG-1/2 (hash SHA-256 PINs/senhas), COD-1..6 (state, escA, uid, ovals, PCI paginação, excluirInsp)
+//      PWA-1/2 (libs CDN offline via SW), PWA-3 (setTimeout removido svLocal)
+//      ARQ-1 (requestIdleCallback compressão), ARQ-2 (handlers erro globais), ARQ-3 (mat u8/u9/u14/u15)
+// v71: Fase 4: utils.js, router.js, auth.js modularizados
+// v68: report-html.js modularizado (Fase 3): Drive/email removidos, page-break corrigido
 // Todos os sistemas: Login, Home, PCI, Relatorios, Formularios, Admin
 /* ── Sincronização manual — botão na home ─────────────────────────────── */
 async function syncManual(){
@@ -417,6 +420,18 @@ function _fmtLastSync(){
   var h=Math.round(d/60);
   return 'Há '+h+'h';
 }
+/* COD-6: lógica de exclusão extraída de onclick inline para função nomeada —
+   elimina ~120 chars de JS escapado que era impossível de debugar. */
+window.excluirInsp = function(id) {
+  cf('X','Excluir','Excluir esta inspeção?', function() {
+    var insp = S.insp.find(function(x){return x.id===id;});
+    var keys = Object.keys((insp||{}).itens||{});
+    S.insp = S.insp.filter(function(x){return x.id!==id;});
+    PhotoStore.delInsp(id, keys);
+    Sync.queueDeleteInspection(id);
+    DB.sv(); rHome();
+  });
+};
 function rHome(){
   var s=S.sessao;if(!s)return;
   var R=REG[s.reg]||{l:s.reg||'',c:'#003580',bg:'#dbeafe'};
@@ -487,7 +502,7 @@ function rHome(){
       else{h+='<div style="font-size:10px;color:#64748b;">'+fdth(i.data)+'</div>';}
       h+='</div></div><div style="display:flex;gap:6px;">'
         +'<button class="btn br" style="flex:1;padding:8px;font-size:11px;" onclick="retomarF(\''+i.id+'\')">Retomar</button>'
-        +(canDelInsp(i)?'<button onclick="cf(\'X\',\'Excluir\',\'Excluir?\',(function(xid){return function(){var _dkeys=Object.keys((S.insp.find(function(x){return x.id===xid;})||{itens:{}}).itens||{});S.insp=S.insp.filter(function(x){return x.id!==xid;});PhotoStore.delInsp(xid,_dkeys);Sync.queueDeleteInspection(xid);DB.sv();rHome();};})(\'' +i.id+ '\'))" style="background:#f1f5f9;border:none;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;">X</button>':'')
+        +(canDelInsp(i)?'<button onclick="excluirInsp(\''+i.id+'\')" style="background:#f1f5f9;border:none;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;">X</button>':'')
         +'</div></div>';
     });
   }
@@ -736,7 +751,12 @@ function rPCI(){
   el('pflt').innerHTML=tipos.slice(0,7).map(function(t){var sel=S.ptipo===t;var lbl=t==='todos'?'Todos':t.replace('EXTINTOR ','').replace(' KG','kg');return'<button onclick="S.ptipo=\''+t+'\';fpci()" style="border:none;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;background:'+(sel?R.c:'#f1f5f9')+';color:'+(sel?'#fff':'#64748b')+';">'+lbl+'</button>';}).join('');
   fpci();
 }
-function fpci(){
+/* COD-5: controle de paginação da lista PCI — evita truncar 61 itens silenciosamente. */
+var _pciLim=100;
+function fpci_more(){_pciLim+=100;fpci(true);}
+window.fpci_more=fpci_more;
+function fpci(more){
+  if(!more)_pciLim=100; /* reset ao filtrar */
   var s=S.sessao;
   var _global=isGlobal(s);
   var reg=(!_global&&s&&s.reg)?s.reg:'NORTE';
@@ -758,7 +778,7 @@ function fpci(){
     +'<div style="flex:1;font-size:10px;font-weight:700;color:#fff;text-align:center;">Qtd</div>'
     +'<div style="width:32px;font-size:10px;font-weight:700;color:#fff;text-align:center;">RTI</div>'
     +'<div style="flex:2;font-size:10px;font-weight:700;color:#fff;text-align:right;">Status</div></div>';
-  d.slice(0,100).forEach(function(x){
+  d.slice(0,_pciLim).forEach(function(x){
     var bgs=x.s==='VENCIDO'?'#fff5f5':(x.s.indexOf('30')>=0?'#fffbeb':'#fff');
     var rtiOk=x.rti&&x.rti.toUpperCase()==='SIM';
     var condOk=x.condenado&&x.condenado.toUpperCase()==='SIM';
@@ -770,7 +790,12 @@ function fpci(){
     h+='<div style="width:32px;text-align:center;font-size:13px;">'+(rtiOk?'&#9989;':'&#8212;')+'</div>';
     h+='<div style="flex:2;text-align:right;"><span class="pst" style="background:'+x.bg+';color:'+x.c+';">'+x.s+'</span></div></div>';
   });
-  if(d.length>100)h+='<div style="text-align:center;padding:12px;font-size:12px;color:#64748b;">Mostrando 100 de '+d.length+'</div>';
+  if(d.length>_pciLim){
+    h+='<div style="text-align:center;padding:14px 12px;border-top:1px solid #f1f5f9;">'
+      +'<span style="font-size:11px;color:#64748b;margin-right:10px;">Exibindo '+Math.min(_pciLim,d.length)+' de '+d.length+' itens</span>'
+      +'<button onclick="fpci_more()" style="background:#003580;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;">Carregar mais</button>'
+      +'</div>';
+  }
   el('ptbl').innerHTML=h;
 }
 
@@ -1637,7 +1662,9 @@ function usrToggleAtivo(noToggle){
   else{btn.style.borderColor='#dc2626';btn.style.color='#dc2626';btn.style.background='#fee2e2';btn.textContent='✕ Inativo';}
 }
 
-function saveUser(){
+/* SEG-2: saveUser assíncrono — PIN é hasheado com SHA-256 antes de armazenar.
+   A comparação de duplicidade também usa o hash para manter consistência. */
+async function saveUser(){
   var nome=el('u-nome').value.trim();
   var pin=el('u-pin').value.trim();
   var reg=el('u-reg').value;
@@ -1645,16 +1672,17 @@ function saveUser(){
   if(!nome){el('u-err').textContent='Nome é obrigatório.';return;}
   if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){el('u-err').textContent='PIN deve ter exatamente 4 dígitos.';return;}
   if(!reg){el('u-err').textContent='Selecione a região.';return;}
-  // Check PIN unique (except self)
-  var dup=US.find(function(x){return x.pin===pin&&x.id!==_uEditId;});
+  var pinHash=await hashPin(pin);
+  // Check PIN único (hash vs hash, exceto o próprio usuário em edição)
+  var dup=US.find(function(x){return x.pin===pinHash&&x.id!==_uEditId;});
   if(dup){el('u-err').textContent='PIN já em uso por '+dup.nome.split(' ')[0]+'. Use outro.';return;}
   var _now=new Date().toISOString();
   if(_uEditId){
     var u=US.find(function(x){return x.id===_uEditId;});
-    if(u){u.nome=nome;u.mat=el('u-mat').value.trim();u.pin=pin;u.cargo=el('u-cargo').value.trim()||'Fiscal';u.polo='';u.reg=reg;u.ativo=_uAtivo;u.updated_at=_now;}
+    if(u){u.nome=nome;u.mat=el('u-mat').value.trim();u.pin=pinHash;u.cargo=el('u-cargo').value.trim()||'Fiscal';u.polo='';u.reg=reg;u.ativo=_uAtivo;u.updated_at=_now;}
     Tt('✓ Usuário atualizado!');
   } else {
-    US.push({id:'u'+Date.now(),nome:nome,mat:el('u-mat').value.trim(),pin:pin,reg:reg,cargo:el('u-cargo').value.trim()||'Fiscal',polo:'',ativo:_uAtivo,updated_at:_now});
+    US.push({id:'u'+Date.now(),nome:nome,mat:el('u-mat').value.trim(),pin:pinHash,reg:reg,cargo:el('u-cargo').value.trim()||'Fiscal',polo:'',ativo:_uAtivo,updated_at:_now});
     Tt('✓ Usuário adicionado!');
   }
   DB.sv();cm('m-usr');rAdm();rLogin();
@@ -4369,6 +4397,17 @@ setInterval(function(){
     if(btn){var sub=btn.querySelector('div div:last-child');if(sub)sub.textContent=_fmtLastSync();}
   }).catch(function(){S._syncBusy=false;});
 },1800000);
+
+/* ARQ-2: handlers globais de erro — capturam Promises sem .catch() e erros JS inesperados
+   que antes deixavam a tela parada sem nenhuma mensagem ao usuário. */
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('[TJMG] Unhandled promise rejection:', e.reason);
+  try { Tt('Erro inesperado. Tente recarregar o app.'); } catch(_) {}
+});
+window.onerror = function(msg, src, line, col, err) {
+  console.error('[TJMG] onerror:', msg, src+':'+line+':'+col, err);
+};
+
 bootApp();
 
 // ------------------------------------------------------------

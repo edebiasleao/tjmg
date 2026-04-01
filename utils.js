@@ -11,7 +11,8 @@
 function ini(n){if(!n)return'';var p=(n+'').split(' ').filter(function(x){return x.length>0;}).slice(0,2);return p.map(function(x){return x[0].toUpperCase();}).join('');}
 function fdt(x){if(x==null)return'-';try{var d=new Date(x);if(isNaN(d.getTime()))return'-';return d.toLocaleDateString('pt-BR');}catch(e){return'-';}}
 function fdth(x){if(x==null)return'-';try{var d=new Date(x);if(isNaN(d.getTime()))return'-';return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return'-';}}
-function uid(){if(crypto&&crypto.randomUUID)return crypto.randomUUID();return Math.random().toString(36).slice(2)+Date.now().toString(36);}
+// COD-4: crypto.randomUUID() é suportado em todos os browsers modernos desde 2021 — fallback removido.
+function uid(){return crypto.randomUUID();}
 function Tt(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
 function cm(id){document.getElementById(id).style.display='none';}
 function el(id){return document.getElementById(id);}
@@ -69,8 +70,19 @@ function pciSt(val){
   return{s:'VIGENTE',bg:'#dcfce7',c:'#16a34a'};
 }
 
-function ovals(o){return Object.keys(o).map(function(k){return o[k];});}
-function oentries(o){return Object.keys(o).map(function(k){return[k,o[k]];});}
+// COD-3: Object.values/Object.entries são nativos desde ES2017 — shims removidos.
+function ovals(o){return Object.values(o);}
+function oentries(o){return Object.entries(o);}
+
+// COD-2: _escA movida de auth.js para utils.js (utilitário genérico).
+function _escA(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// SEG-1/2: hash SHA-256 assíncrono para comparar PINs sem expor texto claro.
+// Uso: hashPin('1234').then(function(h){ ... });
+async function hashPin(p){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(p)));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
 
 // ── Expor para onclick inline ─────────────────────────────────────────────
 window.el            = el;
@@ -88,6 +100,8 @@ window.canDelInsp    = canDelInsp;
 window.filterByReg   = filterByReg;
 window.pciSt         = pciSt;
 window.pciDataForUser= pciDataForUser;
+window._escA         = _escA;
+window.hashPin       = hashPin;
 
 // ── Helpers de inputs numéricos (movido do inline do index.html — Bug 4 fix) ──
 function _spf(v){return parseFloat(((v||'')+'').replace(',','.'))||0;}

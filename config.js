@@ -9,15 +9,16 @@
 // VERSÃO CENTRALIZADA — v69
 // Manter em sincronia com sw.js (const V) e manifest.json (start_url ?v=)
 // ------------------------------------------------------------
-var APP_VERSION = 'v71';
+var APP_VERSION = 'v72';
 /* US é sempre populado por DB.ld() — não pré-definir aqui evita divergência
    entre duas fontes de verdade e elimina o risco de dados obsoletos serem
    enviados ao Supabase antes do pull inicial. */
 var US=[];
-/* ⚠ SEGURANÇA: credenciais expostas no cliente. Em produção, migrar para autenticação via Supabase Auth. */
-var ADM={u:'admin',p:'1530'};
-/* ⚠ Idem acima — credenciais de coordenador expostas. */
-var COORD={u:'coord',p:'2026'};
+/* SEG-1: senhas armazenadas como SHA-256 — nunca texto claro no repositório.
+   Para gerar novo hash: hashPin('suaSenha').then(console.log)
+   admin → SHA-256('1530')  | coord → SHA-256('2026') */
+var ADM={u:'admin',p:'8ff9538e65e6781d654b811f88161d12455935ffb8f470815063b6ab6cb7fdff'};
+var COORD={u:'coord',p:'158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab'};
 var REG={NORTE:{l:'Norte',ct:'CT 017-2026',c:'#2563eb',bg:'#dbeafe'},CENTRAL:{l:'Central',ct:'CT 025-2026',c:'#7c3aed',bg:'#ede9fe'},LESTE:{l:'Leste',ct:'CT 019-2026',c:'#16a34a',bg:'#dcfce7'},ZONA_MATA:{l:'Zona da Mata',ct:'CT 018-2026',c:'#b45309',bg:'#fef3c7'},TRIANGULO:{l:'Tri\u00e2ngulo',ct:'CT 392-2022',c:'#0891b2',bg:'#cffafe'},SUL:{l:'Sul',ct:'CT 138-2023',c:'#be185d',bg:'#fce7f3'},SUDOESTE:{l:'Sudoeste',ct:'CT 421-2022',c:'#65a30d',bg:'#ecfccb'}};
 var TIPOS={
   periodica:  {l:'RITMP \u2013 Manuten\u00e7\u00e3o Peri\u00f3dica',c:'#16a34a',bg:'#dcfce7',i:'&#128295;',e:['Dados','Checklist','Materiais','Concluir']},

@@ -9,7 +9,7 @@
 //        Dependências apenas na direção: config → data → state → demais.
 // ============================================================
 
-var S={sessao:null,insp:[],rflt:'todos',rsts:'todos',ptipo:'todos',dadm:'usuarios',did:null,_lastSync:0,_syncBusy:false};
+var S={sessao:null,insp:[],rflt:'todos',rsts:'todos',ptipo:'todos',dadm:'usuarios',did:null,_lastSync:0,_syncBusy:false,_coordReg:'todos',_coordSel:[]};
 // F — estado completo do formulário ativo.
 // Campos inicializados aqui para garantir que qualquer módulo que leia F
 // antes de iniciarF() nunca encontre undefined (normalizeFormState também cobre).

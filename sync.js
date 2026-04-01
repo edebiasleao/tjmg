@@ -76,17 +76,28 @@ var Sync={
       try{
         var img=new Image();
         img.onload=function(){
-          try{
-            var w=img.naturalWidth,h=img.naturalHeight;
-            if(w>maxDim||h>maxDim){
-              if(w>=h){h=Math.round(h*(maxDim/w));w=maxDim;}
-              else{w=Math.round(w*(maxDim/h));h=maxDim;}
-            }
-            var cv=document.createElement('canvas');
-            cv.width=w;cv.height=h;
-            cv.getContext('2d').drawImage(img,0,0,w,h);
-            res(cv.toDataURL('image/jpeg',qual));
-          }catch(e){res(b64);}
+          /* ARQ-1: canvas.toDataURL é síncrono e pode bloquear a UI 200–500ms
+             em fotos grandes. requestIdleCallback agenda a compressão para quando
+             o browser estiver ocioso, evitando competir com gestos do usuário.
+             Fallback para setTimeout se rIC não estiver disponível (Android antigo). */
+          var compress=function(){
+            try{
+              var w=img.naturalWidth,h=img.naturalHeight;
+              if(w>maxDim||h>maxDim){
+                if(w>=h){h=Math.round(h*(maxDim/w));w=maxDim;}
+                else{w=Math.round(w*(maxDim/h));h=maxDim;}
+              }
+              var cv=document.createElement('canvas');
+              cv.width=w;cv.height=h;
+              cv.getContext('2d').drawImage(img,0,0,w,h);
+              res(cv.toDataURL('image/jpeg',qual));
+            }catch(e){res(b64);}
+          };
+          if(typeof requestIdleCallback==='function'){
+            requestIdleCallback(compress,{timeout:2000});
+          }else{
+            setTimeout(compress,0);
+          }
         };
         img.onerror=function(){res(b64);};
         img.src=b64;
