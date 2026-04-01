@@ -620,7 +620,9 @@ function _gerarHTMLStr(id) {
     }
 
     /* ── Assinatura ── */
-    /* Fiscal responsável + demais fiscais ativos da mesma região */
+    /* Para RITMP/RITE/RITP: só fiscais da região (sem gestor de contrato).
+       Para outros tipos: fiscal responsável + demais + gestor. */
+    var _isRITxx = (i.tipo === 'periodica' || i.tipo === 'ose' || i.tipo === 'programada');
     var _outrosFiscais = (typeof US !== 'undefined' ? US : []).filter(function(u) {
       return u.ativo && u.reg === i.reg && u.nome !== fiscalNome;
     });
@@ -632,6 +634,12 @@ function _gerarHTMLStr(id) {
         + (u.mat ? '<div class="ass-mat">Mat. ' + _safe(u.mat) + '</div>' : '')
         + '</div>';
     }).join('');
+    var _gestorBox = _isRITxx ? '' :
+        '<div class="ass-box"><div class="ass-title">Gestor de Contrato</div>'
+      + '<div class="ass-linha"></div>'
+      + '<div class="ass-nome">________________________________</div>'
+      + '<div class="ass-cargo">Gestor de Contrato — TJMG / COMAP-GEMAP-DENGEP</div>'
+      + '</div>';
     var assHtml = '<div class="ass-wrap">'
       + '<div class="ass-box"><div class="ass-title">Fiscal Responsável</div>'
       + '<div class="ass-linha"></div>'
@@ -640,11 +648,8 @@ function _gerarHTMLStr(id) {
       + (i.mat ? '<div class="ass-mat">Mat. ' + i.mat + '</div>' : '')
       + '</div>'
       + _outrosAssHtml
-      + '<div class="ass-box"><div class="ass-title">Gestor de Contrato</div>'
-      + '<div class="ass-linha"></div>'
-      + '<div class="ass-nome">________________________________</div>'
-      + '<div class="ass-cargo">Gestor de Contrato — TJMG / COMAP-GEMAP-DENGEP</div>'
-      + '</div></div>';
+      + _gestorBox
+      + '</div>';
 
     /* ── Sumário Executivo ── */
     var sumarioHtml = '<div class="sumario">'
@@ -665,22 +670,12 @@ function _gerarHTMLStr(id) {
       + '<div class="sumario-donut-label">' + (_osp ? 'Execução' : 'Conformidade') + '</div>'
       + '</div></div>';
 
-    /* ── QR Code ── */
-    var qrHtml = '<div class="qr-bar">'
-      + _gerarQRSvg(numDoc, 72)
-      + '<div class="qr-info">'
-      + '<div class="qr-info-label">Protocolo do Documento</div>'
-      + '<div class="qr-info-val">' + numDoc + '</div>'
-      + '<div style="font-size:9px;color:#94a3b8;margin-top:4px;">Gerado em ' + geradoEm + '</div>'
-      + '</div></div>';
-
     /* ── Monta HTML ── */
     var html = '<!DOCTYPE html><html lang="pt-BR"><head>'
       + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
       + '<title>' + _esc(numDoc) + '</title>'
       + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
       + '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>'
-      + '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>'
       + '<style>' + css + '</style>'
       + '</head><body>'
       + '<div class="btn-bar">'
@@ -718,15 +713,14 @@ function _gerarHTMLStr(id) {
       /* Sumário Executivo */
       + sumarioHtml
 
-      /* QR Code + Protocolo */
-      + qrHtml
 
       /* Ficha técnica */
       + '<div class="ficha"><div class="ficha-title">📋 Identificação da Edificação</div>'
       + '<div class="ficha-grid">'
       + '<div class="ficha-item"><div class="ficha-label">Edificação</div><div class="ficha-val">' + _safe(i.edif) + '</div></div>'
       + '<div class="ficha-item"><div class="ficha-label">Comarca</div><div class="ficha-val">' + _safe(i.com) + '</div></div>'
-      + '<div class="ficha-item"><div class="ficha-label">Data da Vistoria</div><div class="ficha-val">' + fdt(_dataVist) + '</div></div>'
+      + '<div class="ficha-item"><div class="ficha-label">' + ((i.tipo==='periodica'||i.tipo==='ose'||i.tipo==='programada')?'Data de Início':'Data da Vistoria') + '</div><div class="ficha-val">' + fdt(_dataVist) + '</div></div>'
+      + ((i.tipo==='periodica'||i.tipo==='ose'||i.tipo==='programada')&&i.dtVistoriaFim ? '<div class="ficha-item"><div class="ficha-label">Data Final</div><div class="ficha-val">' + fdt(i.dtVistoriaFim) + '</div></div>' : '')
       + '<div class="ficha-item"><div class="ficha-label">Fiscal Responsável</div><div class="ficha-val">' + fiscalNome + '</div></div>'
       + (_osp && i.os ? '<div class="ficha-item"><div class="ficha-label">' + (i.tipo==='ose'?'Nº da OSE':'Nº da OSP') + '</div><div class="ficha-val mono">' + _esc(i.os) + '</div></div>' : '')
       + (i.tipo==='osp'&&i.dtInicioExec ? '<div class="ficha-item"><div class="ficha-label">Início Execução</div><div class="ficha-val">' + fdt(i.dtInicioExec) + '</div></div>' : '')
@@ -1043,22 +1037,12 @@ function _gerarHTMLSubStr(id) {
       + '<div class="sumario-donut-label">Conformidade</div>'
       + '</div></div>';
 
-    /* ── QR Code ── */
-    var qrHtml = '<div class="qr-bar">'
-      + _gerarQRSvg(numDoc, 72)
-      + '<div class="qr-info">'
-      + '<div class="qr-info-label">Protocolo do Documento</div>'
-      + '<div class="qr-info-val">' + numDoc + '</div>'
-      + '<div style="font-size:9px;color:#94a3b8;margin-top:4px;">Gerado em ' + geradoEm + '</div>'
-      + '</div></div>';
-
     /* ── Monta HTML ── */
     var html = '<!DOCTYPE html><html lang="pt-BR"><head>'
       + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
       + '<title>' + _esc(numDoc) + '</title>'
       + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
       + '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>'
-      + '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>'
       + '<style>' + css + '</style>'
       + '</head><body>'
       + '<div class="btn-bar">'
@@ -1097,7 +1081,6 @@ function _gerarHTMLSubStr(id) {
       + sumarioHtml
 
       /* QR Code */
-      + qrHtml
 
       /* Ficha técnica */
       + '<div class="ficha"><div class="ficha-title">📋 Identificação da Edificação</div>'

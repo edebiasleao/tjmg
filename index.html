@@ -923,7 +923,7 @@ function syncDraftFromF(saveNow){
   var d=F.d||{};var ex=S.insp.find(function(x){return x.id===F.id;});
   var snap=JSON.parse(JSON.stringify(F));
   var r={id:F.id,edif:d.edif||'Rascunho',com:d.com||'',polo:d.polo||'',grupo:d.grp||'B',tipo:F.tipo,
-         tv:d.tv||'trimestral',dtVistoria:d.dtVistoria||new Date().toISOString().slice(0,10),fiscal:d.fiscal||(S.sessao?S.sessao.nome:''),mat:d.mat||(S.sessao?S.sessao.mat:''),
+         tv:d.tv||'trimestral',dtVistoria:d.dtVistoria||new Date().toISOString().slice(0,10),dtVistoriaFim:d.dtVistoriaFim||'',fiscal:d.fiscal||(S.sessao?S.sessao.nome:''),mat:d.mat||(S.sessao?S.sessao.mat:''),
          data:ex?ex.data:new Date().toISOString(),st:(ex&&ex.st==='finalizada')?'finalizada':'em_andamento',
          reg:d.reg||(S.sessao?S.sessao.reg:''),
          os:d.os||'',descricao:d.descricao||'',
@@ -1919,7 +1919,8 @@ function rFDados(c){
   var _todayISO=new Date().toISOString().slice(0,10);
   var _temPer=(F.tipo!=='ose'&&F.tipo!=='programada'&&F.tipo!=='osp');
   h+='<div style="display:grid;grid-template-columns:'+(_temPer?'1fr 1fr':'1fr')+';gap:10px;margin-bottom:10px;">';
-  h+='<div><div class="lbl">Data da Vistoria</div>';
+  var _lbDt=(F.tipo==='periodica'||F.tipo==='ose'||F.tipo==='programada')?'Data de Início da Vistoria':'Data da Vistoria';
+  h+='<div><div class="lbl">'+_lbDt+'</div>';
   h+='<input type="date" value="'+(d.dtVistoria||_todayISO)+'" max="'+_todayISO+'" oninput="F.d.dtVistoria=this.value" style="padding:10px 8px;"></div>';
   if(_temPer){
     h+='<div><div class="lbl">Periodicidade</div>';
@@ -3085,6 +3086,10 @@ function rFMats(c){
      +'</div>';
 
   var h=_infoItens
+    +(( F.tipo==='periodica'||F.tipo==='ose'||F.tipo==='programada')
+      ? '<div class="card" style="margin-bottom:12px;"><div class="lbl">Data Final da Vistoria</div>'
+        +'<input type="date" value="'+(F.d.dtVistoriaFim||new Date().toISOString().slice(0,10))+'" oninput="F.d.dtVistoriaFim=this.value" style="padding:10px 8px;width:100%;"></div>'
+      : '')
     +'<div style="font-size:15px;font-weight:800;margin-bottom:4px;">Materiais e Peças</div>'
     +'<div style="font-size:10px;color:#64748b;margin-bottom:12px;">Lista: <b>'+label+'</b></div>'
     +'<div class="card" style="margin-bottom:8px;">'
@@ -3971,6 +3976,8 @@ function salvarF(){
     i.st='finalizada';
     /* Grava campos OSP */
     if(F.tipo==='osp'){i.dtInicioExec=F.d.dtInicioExec||'';i.diasPrazo=F.d.diasPrazo||'';i.dtFinalExec=F.d.dtFinalExec||'';}
+    /* Grava data final de vistoria para RITMP/RITE/RITP */
+    if(F.tipo==='periodica'||F.tipo==='ose'||F.tipo==='programada'){i.dtVistoriaFim=F.d.dtVistoriaFim||'';}
     /* Grava protocolo definitivo no momento da finalização (Fix #2) */
     if(!i.protocolo)i.protocolo=gerarProtocolo(i);
     DB.sv();
