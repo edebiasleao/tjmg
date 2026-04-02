@@ -365,7 +365,7 @@ input:focus,textarea:focus{border-color:var(--a);}
 
 <script>
 'use strict';
-// ── index.html main script — v73 ──────────────────────────────────────
+// ── index.html main script — v67 (Fase 2 da modularização) ──────────────
 // REMOVIDO deste bloco (agora em arquivos externos):
 //   config.js      → APP_VERSION, REG, TIPOS, ST, SIS, ADM, COORD
 //   data.js        → ATVs, MATS, PCI_DATA, EDIFICACOES
@@ -379,12 +379,9 @@ input:focus,textarea:focus{border-color:var(--a);}
 
 
 
-// TJMG Fiscal PWA v73 — Correções de segurança, qualidade e PWA
-// v73: BUG-1 (supabase offline), BUG-2 (coordExpSelPDF), BUG-3 (double var c),
-//      BUG-4 (Medicoes Sub display), BUG-5 (_inspVis.length), FALHA-6 (guards db),
-//      FALHA-7 (_ospVinculada), FALHA-9 (regex PIN SHA-256), A1-A2 (sw version/skipWaiting)
-// v71: Fase 4: utils.js, router.js, auth.js modularizados
-// v68: report-html.js modularizado (Fase 3): Drive/email removidos, page-break corrigido
+// TJMG Fiscal PWA v69 - Fase 4: utils.js, router.js, auth.js modularizados
+// v68 - report-html.js modularizado (Fase 3): Drive/email removidos, page-break corrigido, subestação redesenhada
+// v63 - fix login tela branca (mergeRemoteUsers + bootApp background), syncManual botao home, sync auto 30min, Drive acao=cancelar - fix finalizarI bug (i→i.id em _gerarHTMLStr/_gerarHTMLSubStr), Drive getFolderById
 // Todos os sistemas: Login, Home, PCI, Relatorios, Formularios, Admin
 /* ── Sincronização manual — botão na home ─────────────────────────────── */
 async function syncManual(){
@@ -420,18 +417,6 @@ function _fmtLastSync(){
   var h=Math.round(d/60);
   return 'Há '+h+'h';
 }
-/* COD-6: lógica de exclusão extraída de onclick inline para função nomeada —
-   elimina ~120 chars de JS escapado que era impossível de debugar. */
-window.excluirInsp = function(id) {
-  cf('X','Excluir','Excluir esta inspeção?', function() {
-    var insp = S.insp.find(function(x){return x.id===id;});
-    var keys = Object.keys((insp||{}).itens||{});
-    S.insp = S.insp.filter(function(x){return x.id!==id;});
-    PhotoStore.delInsp(id, keys);
-    Sync.queueDeleteInspection(id);
-    DB.sv(); rHome();
-  });
-};
 function rHome(){
   var s=S.sessao;if(!s)return;
   var R=REG[s.reg]||{l:s.reg||'',c:'#003580',bg:'#dbeafe'};
@@ -502,7 +487,7 @@ function rHome(){
       else{h+='<div style="font-size:10px;color:#64748b;">'+fdth(i.data)+'</div>';}
       h+='</div></div><div style="display:flex;gap:6px;">'
         +'<button class="btn br" style="flex:1;padding:8px;font-size:11px;" onclick="retomarF(\''+i.id+'\')">Retomar</button>'
-        +(canDelInsp(i)?'<button onclick="excluirInsp(\''+i.id+'\')" style="background:#f1f5f9;border:none;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;">X</button>':'')
+        +(canDelInsp(i)?'<button onclick="cf(\'X\',\'Excluir\',\'Excluir?\',(function(xid){return function(){var _dkeys=Object.keys((S.insp.find(function(x){return x.id===xid;})||{itens:{}}).itens||{});S.insp=S.insp.filter(function(x){return x.id!==xid;});PhotoStore.delInsp(xid,_dkeys);Sync.queueDeleteInspection(xid);DB.sv();rHome();};})(\'' +i.id+ '\'))" style="background:#f1f5f9;border:none;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;">X</button>':'')
         +'</div></div>';
     });
   }
@@ -513,9 +498,7 @@ function rHome(){
       h+='<div class="card" style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="openDet(\''+i.id+'\')"><div style="width:34px;height:34px;border-radius:8px;background:'+t.bg+';display:flex;align-items:center;justify-content:center;font-size:16px;">'+t.i+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">'+i.edif+'</div><div style="font-size:10px;color:#64748b;">'+(i.com||'-')+' - '+fdt(i.dtVistoria||i.data)+'</div></div><span class="bdg" style="background:'+t.bg+';color:'+t.c+';">'+t.l+'</span><span class="bdg" style="background:#dcfce7;color:#16a34a;">Enviado</span></div>';
     });
   }
-  /* BUG-5 fix: usar _inspVis (já filtrada por região) ao invés de S.insp bruto.
-     Fiscal de região sem inspeções ficava com tela em branco sem feedback. */
-  if(!_inspVis.length)h+='<div style="text-align:center;padding:32px;"><div style="font-size:48px;">&#128203;</div><div style="font-size:14px;color:#94a3b8;margin-top:10px;font-weight:600;">Nenhuma inspecao</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px;">Toque em Criar Relatorio</div></div>';
+  if(!S.insp.length)h+='<div style="text-align:center;padding:32px;"><div style="font-size:48px;">&#128203;</div><div style="font-size:14px;color:#94a3b8;margin-top:10px;font-weight:600;">Nenhuma inspecao</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px;">Toque em Criar Relatorio</div></div>';
   h+='<div style="height:8px;"></div>';
   el('hbody').innerHTML=h;
 }
@@ -753,12 +736,7 @@ function rPCI(){
   el('pflt').innerHTML=tipos.slice(0,7).map(function(t){var sel=S.ptipo===t;var lbl=t==='todos'?'Todos':t.replace('EXTINTOR ','').replace(' KG','kg');return'<button onclick="S.ptipo=\''+t+'\';fpci()" style="border:none;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;background:'+(sel?R.c:'#f1f5f9')+';color:'+(sel?'#fff':'#64748b')+';">'+lbl+'</button>';}).join('');
   fpci();
 }
-/* COD-5: controle de paginação da lista PCI — evita truncar 61 itens silenciosamente. */
-var _pciLim=100;
-function fpci_more(){_pciLim+=100;fpci(true);}
-window.fpci_more=fpci_more;
-function fpci(more){
-  if(!more)_pciLim=100; /* reset ao filtrar */
+function fpci(){
   var s=S.sessao;
   var _global=isGlobal(s);
   var reg=(!_global&&s&&s.reg)?s.reg:'NORTE';
@@ -780,7 +758,7 @@ function fpci(more){
     +'<div style="flex:1;font-size:10px;font-weight:700;color:#fff;text-align:center;">Qtd</div>'
     +'<div style="width:32px;font-size:10px;font-weight:700;color:#fff;text-align:center;">RTI</div>'
     +'<div style="flex:2;font-size:10px;font-weight:700;color:#fff;text-align:right;">Status</div></div>';
-  d.slice(0,_pciLim).forEach(function(x){
+  d.slice(0,100).forEach(function(x){
     var bgs=x.s==='VENCIDO'?'#fff5f5':(x.s.indexOf('30')>=0?'#fffbeb':'#fff');
     var rtiOk=x.rti&&x.rti.toUpperCase()==='SIM';
     var condOk=x.condenado&&x.condenado.toUpperCase()==='SIM';
@@ -792,12 +770,7 @@ function fpci(more){
     h+='<div style="width:32px;text-align:center;font-size:13px;">'+(rtiOk?'&#9989;':'&#8212;')+'</div>';
     h+='<div style="flex:2;text-align:right;"><span class="pst" style="background:'+x.bg+';color:'+x.c+';">'+x.s+'</span></div></div>';
   });
-  if(d.length>_pciLim){
-    h+='<div style="text-align:center;padding:14px 12px;border-top:1px solid #f1f5f9;">'
-      +'<span style="font-size:11px;color:#64748b;margin-right:10px;">Exibindo '+Math.min(_pciLim,d.length)+' de '+d.length+' itens</span>'
-      +'<button onclick="fpci_more()" style="background:#003580;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;">Carregar mais</button>'
-      +'</div>';
-  }
+  if(d.length>100)h+='<div style="text-align:center;padding:12px;font-size:12px;color:#64748b;">Mostrando 100 de '+d.length+'</div>';
   el('ptbl').innerHTML=h;
 }
 
@@ -1664,9 +1637,7 @@ function usrToggleAtivo(noToggle){
   else{btn.style.borderColor='#dc2626';btn.style.color='#dc2626';btn.style.background='#fee2e2';btn.textContent='✕ Inativo';}
 }
 
-/* SEG-2: saveUser assíncrono — PIN é hasheado com SHA-256 antes de armazenar.
-   A comparação de duplicidade também usa o hash para manter consistência. */
-async function saveUser(){
+function saveUser(){
   var nome=el('u-nome').value.trim();
   var pin=el('u-pin').value.trim();
   var reg=el('u-reg').value;
@@ -1674,17 +1645,16 @@ async function saveUser(){
   if(!nome){el('u-err').textContent='Nome é obrigatório.';return;}
   if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){el('u-err').textContent='PIN deve ter exatamente 4 dígitos.';return;}
   if(!reg){el('u-err').textContent='Selecione a região.';return;}
-  var pinHash=await hashPin(pin);
-  // Check PIN único (hash vs hash, exceto o próprio usuário em edição)
-  var dup=US.find(function(x){return x.pin===pinHash&&x.id!==_uEditId;});
+  // Check PIN unique (except self)
+  var dup=US.find(function(x){return x.pin===pin&&x.id!==_uEditId;});
   if(dup){el('u-err').textContent='PIN já em uso por '+dup.nome.split(' ')[0]+'. Use outro.';return;}
   var _now=new Date().toISOString();
   if(_uEditId){
     var u=US.find(function(x){return x.id===_uEditId;});
-    if(u){u.nome=nome;u.mat=el('u-mat').value.trim();u.pin=pinHash;u.cargo=el('u-cargo').value.trim()||'Fiscal';u.polo='';u.reg=reg;u.ativo=_uAtivo;u.updated_at=_now;}
+    if(u){u.nome=nome;u.mat=el('u-mat').value.trim();u.pin=pin;u.cargo=el('u-cargo').value.trim()||'Fiscal';u.polo='';u.reg=reg;u.ativo=_uAtivo;u.updated_at=_now;}
     Tt('✓ Usuário atualizado!');
   } else {
-    US.push({id:'u'+Date.now(),nome:nome,mat:el('u-mat').value.trim(),pin:pinHash,reg:reg,cargo:el('u-cargo').value.trim()||'Fiscal',polo:'',ativo:_uAtivo,updated_at:_now});
+    US.push({id:'u'+Date.now(),nome:nome,mat:el('u-mat').value.trim(),pin:pin,reg:reg,cargo:el('u-cargo').value.trim()||'Fiscal',polo:'',ativo:_uAtivo,updated_at:_now});
     Tt('✓ Usuário adicionado!');
   }
   DB.sv();cm('m-usr');rAdm();rLogin();
@@ -1791,9 +1761,7 @@ function vincularOSP(ospId){
      ativSel:JSON.parse(JSON.stringify(osp.ativSel||{})),
      ativ:'',causas:'',lim:'',normas:'NBR 5674',concl:'',pron:{},
      fach:{FR:{obs:'',nc:false,nd:''},LD:{obs:'',nc:false,nd:''},LE:{obs:'',nc:false,nd:''},FU:{obs:'',nc:false,nd:''}},
-     schk:{},med:{p1:'',p2:'',p3:'',bep:''},sub:null,
-     /* FALHA-7 fix: _ospVinculada explícito evita undefined em tipos não-programada */
-     _ospVinculada:null};
+     schk:{},med:{p1:'',p2:'',p3:'',bep:''},sub:null};
   normalizeFormState(F);
   applyGrupoDaEdificacao(F);
   ensureDraftItems(F);
@@ -1847,8 +1815,7 @@ function rFe(resetScroll){
     sbh+=(si<et?'&#10003;':(si+1))+'</div><div class="sn'+(si===et?' on':'')+'">'+ets[si]+'</div></div>';
   }
   el('fsbr').innerHTML=sbh;
-  /* BUG-3 fix: removido segundo 'var c' — reuso da variável já declarada acima */
-  c=el('fbody');c.innerHTML='';
+  var c=el('fbody');c.innerHTML='';
   if(tn==='Dados'||tn==='Dados/OS'||tn==='Dados OSP'){if(F.tipo==='subestacao')rFSubDados(c);else if(F.tipo==='osp')rFDadosOSP(c);else rFDados(c);}
   else if(tn==='Sistemas')rFSistemas(c);
   else if(tn==='Sel. Atividades')rFSelAtiv(c);
@@ -1860,8 +1827,7 @@ function rFe(resetScroll){
   else if(tn==='Materiais')rFMats(c);
   else if(tn==='Documentos')rFPron(c);
   else if(tn==='Checklist Sub'){rFSubChecklist(c);c.style.display='block';}
-  /* BUG-4 fix: Medicoes Sub usa mesma estrutura que Checklist Sub — precisa display:block */
-  else if(tn==='Medicoes Sub'){rFSubMedicoes(c);c.style.display='block';}
+  else if(tn==='Medicoes Sub')rFSubMedicoes(c);
   else if(tn==='Concluir'||tn==='Conclusao')rFConc(c);
   else c.innerHTML='<div style="padding:20px;color:#64748b;">'+tn+'</div>';
   if(prevScroll>0){c.scrollTop=prevScroll;}
@@ -4403,17 +4369,6 @@ setInterval(function(){
     if(btn){var sub=btn.querySelector('div div:last-child');if(sub)sub.textContent=_fmtLastSync();}
   }).catch(function(){S._syncBusy=false;});
 },1800000);
-
-/* ARQ-2: handlers globais de erro — capturam Promises sem .catch() e erros JS inesperados
-   que antes deixavam a tela parada sem nenhuma mensagem ao usuário. */
-window.addEventListener('unhandledrejection', function(e) {
-  console.error('[TJMG] Unhandled promise rejection:', e.reason);
-  try { Tt('Erro inesperado. Tente recarregar o app.'); } catch(_) {}
-});
-window.onerror = function(msg, src, line, col, err) {
-  console.error('[TJMG] onerror:', msg, src+':'+line+':'+col, err);
-};
-
 bootApp();
 
 // ------------------------------------------------------------

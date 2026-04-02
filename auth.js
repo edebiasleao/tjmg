@@ -1,9 +1,10 @@
 'use strict';
 // ============================================================
+function _escA(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 // auth.js — Autenticação, Logout e Telas de Coordenação
-// TJMG Fiscal PWA — v72
+// TJMG Fiscal PWA — Fase 4 da modularização
 // Dependências: state.js (S, US, ADM, COORD, REG, TIPOS),
-//               utils.js (el, cm, cf, Tt, fdt, oentries, ini, _escA),
+//               utils.js (el, cm, cf, Tt, fdt, oentries, ini),
 //               router.js (G, Gb, BNS, bH),
 //               db.js (DB), report-html.js (exportHTML)
 // window-exports: rLogin, openPin, kp, kpOK, openAdm, loginAdm,
@@ -50,25 +51,20 @@ function rpd(){for(var i=0;i<4;i++)el('pd'+i).classList.toggle('on',i<_pbuf.leng
 function cancelPin(){_pbuf="";_pid="";rpd();cm("m-pin");}
 function kp(n){if(n===-1){_pbuf=_pbuf.slice(0,-1);rpd();el('perr').textContent='';return;}if(_pbuf.length<4){_pbuf+=String(n);rpd();if(_pbuf.length===4)setTimeout(doLogin,120);}}
 function kpOK(){doLogin();}
-// doLogin — compara PIN digitado diretamente com o valor armazenado.
 function doLogin(){
   var u=US.find(function(x){return x.id===_pid;});if(!u)return;
-  if(_pbuf!==String(u.pin)){el('perr').textContent='PIN incorreto. Tente novamente.';_pbuf='';rpd();return;}
+  if(_pbuf!==u.pin){el('perr').textContent='PIN incorreto. Tente novamente.';_pbuf='';rpd();return;}
   S.sessao={tipo:'usuario',userId:u.id,nome:u.nome,mat:u.mat,reg:u.reg,cargo:u.cargo,polo:u.polo||'',_t:Date.now()};
   DB.sv();cm('m-pin');rHome();G('s-home');BNS.forEach(function(id){var e=el(id);if(e)e.innerHTML=bH('home');});
 }
 function openAdm(){el('au').value='';el('ap').value='';el('ae').textContent='';el('m-adm').style.display='flex';}
-// loginAdm — compara senha diretamente com ADM.p.
 function loginAdm(){
   var u=el('au').value.trim();var p=el('ap').value.trim();
   if(u===ADM.u&&p===ADM.p){S.sessao={tipo:'admin',userId:'admin',nome:'Administrador',reg:null,cargo:'Admin',polo:'',_t:Date.now()};DB.sv();cm('m-adm');rAdm();G('s-admin');}
   else el('ae').textContent='Usuario ou PIN incorretos.';
 }
-// COD-1: resetar _coordReg e _coordSel no logout evita que o próximo coordenador
-// herde filtros e seleções da sessão anterior.
-function logout(){cf('X','Sair','Encerrar sua sessao?',function(){S.sessao=null;S._coordReg='todos';S._coordSel=[];localStorage.removeItem('ts');rLogin();Gb('s-login');});}
+function logout(){cf('X','Sair','Encerrar sua sessao?',function(){S.sessao=null;localStorage.removeItem('ts');rLogin();Gb('s-login');});}
 function openCoord(){el('cu').value='';el('cp').value='';el('ce').textContent='';el('m-coord').style.display='flex';}
-// loginCoord — compara senha diretamente com COORD.p.
 function loginCoord(){
   var u=el('cu').value.trim();var p=el('cp').value.trim();
   if(u===COORD.u&&p===COORD.p){
@@ -263,7 +259,4 @@ window.coordSelAll    = coordSelAll;
 window.coordExpSel    = coordExpSel;
 window.openDetCoord   = openDetCoord;
 window.cancelPin      = cancelPin;
-/* BUG-2 fix: coordExpSelPDF é definida em index.html (script inline) e já está no
-   escopo global. Exportar aqui era um bug: auth.js executa ANTES do inline script,
-   então no momento desta linha coordExpSelPDF ainda é undefined, e
-   window.coordExpSelPDF ficava undefined — TypeError ao clicar em "Exportar PDF". */
+window.coordExpSelPDF = coordExpSelPDF;

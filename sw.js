@@ -1,20 +1,22 @@
-/* TJMG Fiscal — Service Worker v73
-   BUG-1 fix: supabase-js agora pré-cacheado para funcionar offline.
-   A2   fix: skipWaiting movido para DENTRO do waitUntil — SW só ativa
-             após todos os assets estarem em cache (evita ativar com cache incompleto).
-   PWA-1/2: html2pdf.js e qrcode-generator cacheados pelo SW para uso offline.
-   v72: SEG-1/2 hashing, COD-1/2/3/4/5/6, PWA-1/2/3, ARQ-1/2/3 aplicados.
+/* TJMG Fiscal — Service Worker v71
+   Estratégia:
+   - App shell (index.html, sw.js, manifest.json, js/*.js) → network-first, fallback cache
+   - Demais assets → cache-first, atualiza cache em background
+   - Domínios externos (Supabase, CDN, Google) → nunca interceptados
+
    v71: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
+        index.html: 4791 → 4470 linhas (−321 / −7%).
+        v68: Fase 3 — report-html.js extraído do index.html.
+        Funções removidas do index: exportHTML, _gerarHTMLStr, _doExportHTML,
+        exportHTMLSub, _gerarHTMLSubStr, _doExportHTMLSub, normProt,
+        gerarProtocolo, gerarTipoLbl, enviarParaDrive, uploadHtmlToSupabase,
+        enviarEmailRelatorio.
+        Melhorias: page-break corrigido para grades de fotos; relatório de
+        subestação redesenhado com identidade visual TJMG unificada.
+        index.html: 5663 → 4791 linhas (−872 / −15%).
 */
 
-const V = 'tjmg-v73';
-
-/* PWA-1/2/BUG-1: libs CDN que precisam funcionar offline — cacheadas explicitamente. */
-const CDN_CACHE = [
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
-];
+const V = 'tjmg-v71';
 const CACHE = [
   './',
   './index.html',
@@ -44,38 +46,22 @@ const BYPASS = [
   'googleapis.com',
   'gstatic.com',
   'firebase',
-  /* PWA-1/2/BUG-1: cdnjs, jsdelivr e jsdelivr removidos do BYPASS para
-     permitir cache das libs offline. As libs específicas são pré-cacheadas
-     via CDN_CACHE no install. */
+  'cdn.jsdelivr.net',
+  'cdnjs.cloudflare.com',
   'script.google.com',
   'dns.google'
 ];
 
 /* ── Install ── */
 self.addEventListener('install', function(e) {
-  /* A2-fix: skipWaiting DENTRO do waitUntil — o SW só avança para activate
-     após o cache estar 100% populado. Sem isso, o SW poderia ativar antes
-     de ter os assets, servindo respostas incompletas em modo offline. */
   e.waitUntil(
     caches.open(V).then(function(c) {
-      /* App shell (same-origin) */
-      return c.addAll(CACHE).then(function() {
-        /* BUG-1/PWA: pré-cachear libs CDN (incluindo supabase-js) para uso offline */
-        return Promise.all(CDN_CACHE.map(function(url) {
-          return fetch(url, {mode:'cors'}).then(function(r) {
-            if(r && r.ok) c.put(url, r);
-          }).catch(function(err) {
-            console.warn('[SW] CDN cache falhou para', url, err);
-          });
-        }));
-      });
+      return c.addAll(CACHE);
     }).catch(function(err) {
       console.warn('[SW] install cache falhou:', err);
-    }).then(function() {
-      /* A2-fix: skipWaiting só após cache completo */
-      return self.skipWaiting();
     })
   );
+  self.skipWaiting();
 });
 
 /* ── Activate: limpa caches antigos ── */
@@ -104,25 +90,7 @@ self.addEventListener('fetch', function(e) {
   var url;
   try { url = new URL(e.request.url); } catch(err) { return; }
 
-  /* PWA-1/2: interceptar libs CDN antes do check de origem */
-  var isCdnLib = CDN_CACHE.indexOf(e.request.url) !== -1;
-  if (isCdnLib) {
-    e.respondWith(
-      caches.match(e.request).then(function(cached) {
-        if (cached) return cached;
-        return fetch(e.request, {mode:'cors'}).then(function(r) {
-          if (r && r.ok) {
-            var copy = r.clone();
-            caches.open(V).then(function(c) { c.put(e.request, copy); });
-          }
-          return r;
-        });
-      })
-    );
-    return;
-  }
-
-  /* Ignora domínios externos (exceto CDN libs acima) */
+  /* Ignora domínios externos */
   if (BYPASS.some(function(d) { return url.hostname.includes(d); })) return;
 
   /* Ignora outras origens */
