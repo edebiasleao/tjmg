@@ -4,8 +4,8 @@
 // TJMG Fiscal PWA — Fase 1 da modularização
 // Carregar DEPOIS de config.js, ANTES de state.js.
 // ATENÇÃO: Estes arrays são imutáveis — nunca alterar em runtime.
-//   MATS    = 426 itens (Anexo H)
-//   ATVs    = 43 atividades (Anexo B)
+//   MATS    = 1070 itens (Anexo H + serviços)
+//   ATVs    = 48 atividades (Anexo B)
 //   PCI_DATA = 161 registros Norte
 //   EDIFICACOES = todas as regiões
 // ============================================================
@@ -49,15 +49,17 @@ var ATVs={
 
 /* 2.0 INSTALAÇÕES HIDROSSANITÁRIAS */
 '2':[
-  {id:'2.1',n:'2.1',nm:'Água Fria – tubulações e reservatórios',
-   d:'Inspecionar tubulações (barriletes, shafts, coberturas, áreas externas). Inspecionar reservatórios (superiores e inferiores), tampas, registros, flanges, boias e chaves-boia, extravasores. Reparar vazamentos, tratar corrosões, recompor telas de proteção.',p:3},
+  {id:'2.1',n:'2.1',nm:'Água Fria – reservatórios e acessórios',
+   d:'Inspecionar reservatórios (superiores e inferiores), tampas, registros, flanges e acessórios. Efetuar testes de funcionamento das boias, chaves-boia, comandos e extravasores. Reparar vazamentos, tratar corrosões, recompor telas de proteção. Substituir componentes danificados.',p:3},
   {id:'2.2',n:'2.2',nm:'Água Fria – torneiras, registros e válvulas',
    d:'Inspecionar torneiras, registros, válvulas de retenção, válvulas de descarga, duchas higiênicas, engates flexíveis e mecanismos de caixas acopladas. Executar reparos de vazamentos e substituir componentes danificados.',p:3},
-  {id:'2.3',n:'2.3',nm:'Louças e equipamentos sanitários',
-   d:'Inspecionar vasos sanitários, mictórios, lavatórios, cubas, caixas acopladas e similares. Reparar vazamentos, substituir vedações, solucionar entupimentos, revisar fixações e complementar rejuntamentos.',p:0},
-  {id:'2.4',n:'2.4',nm:'Esgoto – ralos, grelhas e sifões',
-   d:'Inspecionar ralos, grelhas, caixas sifonadas e sifões. Solucionar entupimentos e vazamentos. Substituir elementos/componentes danificados.',p:0},
-  {id:'2.5',n:'2.5',nm:'Esgoto – caixas de gordura e drenagem',
+  {id:'2.3',n:'2.3',nm:'Tubulações de distribuição e coleta',
+   d:'Inspecionar integridade das tubulações aparentes nos barriletes, coberturas, shafts, espaços de construção, áreas externas, irrigações e trechos de redes aparentes. Executar reparos de vazamentos, solucionar entupimentos, revisar fixações e vedações. Substituir componentes danificados.',p:3},
+  {id:'2.4',n:'2.4',nm:'Louças e equipamentos sanitários',
+   d:'Inspecionar vasos sanitários, mictórios, lavatórios, cubas, caixas acopladas e similares. Reparar vazamentos, substituir vedações, solucionar entupimentos, revisar fixações e complementar rejuntamentos.',p:3},
+  {id:'2.5',n:'2.5',nm:'Esgoto – ralos, grelhas e sifões',
+   d:'Inspecionar ralos, grelhas, caixas sifonadas e sifões. Solucionar entupimentos e vazamentos. Substituir elementos/componentes danificados.',p:3},
+  {id:'2.6',n:'2.6',nm:'Esgoto – caixas de gordura e drenagem',
    d:'Inspecionar caixas de gordura, caixas de passagem, canaletas e drenos. Efetuar limpeza das caixas de gordura. Solucionar vazamentos e entupimentos.',p:12}
 ],
 
@@ -103,12 +105,16 @@ var ATVs={
    d:'Inspecionar quadros, caixas, barramentos, disjuntores, fusíveis, DRs e DPS. Realizar medições termográficas e elétricas (tensão, corrente) a plena carga. Conferir compatibilidade entre condutores e proteções. Substituir componentes danificados.',p:3},
   {id:'4.6',n:'4.6',nm:'Quadros de distribuição – manutenção anual',
    d:'Executar reaperto das conexões, ajustes, limpeza, medições elétricas (tensão/corrente) a plena carga, afixar etiqueta de manutenção, recompor identificações dos circuitos e avisos de segurança.',p:12},
-  {id:'4.7',n:'4.7',nm:'Iluminação, tomadas e no-breaks',
-   d:'Inspecionar luminárias, lâmpadas, reatores, ignitores, capacitores, interruptores, postes, refletores, programadores horários, relés fotoelétricos, sensores de presença, tomadas e no-breaks. Substituir componentes danificados (lâmpadas, reatores, tomadas, placas).',p:0},
-  {id:'4.8',n:'4.8',nm:'SPDA – inspeção',
+  {id:'4.7',n:'4.7',nm:'Iluminação – inspeção e substituição',
+   d:'Inspecionar luminárias, lâmpadas, reatores, ignitores, capacitores, interruptores, postes, refletores, programadores horários, relés fotoelétricos, sensores de presença e no-breaks. Substituir componentes danificados (lâmpadas, reatores, ignitores, interruptores, acessórios e demais componentes).',p:3},
+  {id:'4.8',n:'4.8',nm:'Tomadas – inspeção e substituição',
+   d:'Inspecionar integridade das tomadas, verificando a existência de sinais de curto-circuito. Substituir componentes danificados (tomadas, placas, suportes, acessórios e demais componentes).',p:3},
+  {id:'4.9',n:'4.9',nm:'SPDA – inspeção',
    d:'Inspecionar malha de captação, descidas aparentes, caixas de aterramento e equalização. Substituir elementos danificados e efetuar reaperto das conexões acessíveis.',p:6},
-  {id:'4.9',n:'4.9',nm:'SPDA – inspeção NBR 5419 (laudo)',
-   d:'Efetuar inspeção do sistema conforme NBR 5419, com emissão de relatório/laudo técnico específico e testes de continuidade.',p:12}
+  {id:'4.10',n:'4.10',nm:'SPDA – inspeção NBR 5419 (laudo)',
+   d:'Efetuar inspeção do sistema conforme NBR 5419, com emissão de relatório/laudo técnico específico e testes de continuidade.',p:12},
+  {id:'4.11',n:'4.11',nm:'Prontuário NR-10',
+   d:'Elaborar e manter atualizado o Prontuário de Instalações Elétricas conforme NR-10.',p:12}
 ],
 
 /* 5.0 REDE DE VOZ E DADOS */
@@ -347,10 +353,43 @@ var MATS=[
 {c:'4.2.1.6',d:'2 1/2"',u:'UN',v:0},
 {c:'4.2.2.1',d:'1/2"',u:'UN',v:0},
 {c:'4.2.2.2',d:'3/4"',u:'UN',v:0},
+{c:'4.2.3',d:'ACABAMENTO CROMADO PARA REGISTRO',u:'UN',v:0},
+{c:'4.2.4',d:'VÁLVULA DE DESCARGA 1 1/2"',u:'UN',v:0},
+{c:'4.2.5',d:'ACABAMENTO CROMADO ANTI-VANDALISMO PARA VÁLVULA DE DESCARGA',u:'UN',v:0},
+{c:'4.2.6',d:'ACABAMENTO METÁLICO CROMADO PARA VÁLVULA DE DESCARGA',u:'UN',v:0},
+{c:'4.2.7',d:'REPARO PARA VÁLVULA DE DESCARGA (1 1/4" A 1 1/2")',u:'UN',v:0},
+{c:'4.2.8',d:'VÁLVULA DE DESCARGA PARA MICTÓRIO ANTI-VANDALISMO 3/4"',u:'UN',v:0},
+{c:'4.2.9',d:'VÁLVULA DE DESCARGA ELETRÔNICA PARA MICTÓRIO 3/4"',u:'UN',v:0},
 {c:'4.2.10.1',d:'1 "',u:'UN',v:0},
 {c:'4.2.10.2',d:'1 1/2"',u:'UN',v:0},
 {c:'4.2.10.3',d:'2"',u:'UN',v:0},
 {c:'4.2.10.4',d:'2 1/2"',u:'UN',v:0},
+{c:'4.2.11',d:'VÁLVULA DE ESCOAMENTO CROMADA PARA LAVATÓRIO',u:'UN',v:0},
+{c:'4.2.12',d:'VÁLVULA DE ESCOAMENTO CROMADA PARA PIA',u:'UN',v:0},
+{c:'4.2.13',d:'VÁLVULA DE ESCOAMENTO CROMADA PARA TANQUE',u:'UN',v:0},
+{c:'4.2.14',d:'TORNEIRA PARA LAVATÓRIO, DE MESA, CROMADA, 1/2"',u:'UN',v:0},
+{c:'4.2.15',d:'TORNEIRA PRESSÃO LAVATÓRIO ANTI-VANDALISMO 1/2"',u:'UN',v:0},
+{c:'4.2.16',d:'TORNEIRA PRESSÃO PARA PIA, DE PAREDE, CROMADA 1/2"',u:'UN',v:0},
+{c:'4.2.17',d:'TORNEIRA PRESSÃO PARA TANQUE, DE PAREDE, CROMADA 1/2"',u:'UN',v:0},
+{c:'4.2.18',d:'TORNEIRA PARA JARDIM, DE PAREDE, 1/2"',u:'UN',v:0},
+{c:'4.2.19',d:'REPARO PARA TORNEIRA',u:'UN',v:0},
+{c:'4.2.20',d:'LIGAÇÃO CROMADA FLEXÍVEL EM MALHA DE AÇO 40 CM',u:'UN',v:0},
+{c:'4.2.21',d:'MICTÓRIO COM SIFÃO INTEGRADO',u:'UN',v:0},
+{c:'4.2.22',d:'BACIA SANITÁRIA SIFONADA CONVENCIONAL',u:'UN',v:0},
+{c:'4.2.23',d:'BACIA SANITÁRIA PARA CAIXA ACOPLADA',u:'UN',v:0},
+{c:'4.2.24',d:'BACIA SANITÁRIA PARA DEFICIENTE FÍSICO',u:'UN',v:0},
+{c:'4.2.25',d:'BACIA SANITÁRIA TURCA COM SIFÃO INTEGRADO',u:'UN',v:0},
+{c:'4.2.26',d:'CAIXA ACOPLADA À BACIA SANITÁRIA',u:'UN',v:0},
+{c:'4.2.27',d:'LAVATÓRIO EM LOUÇA SEM COLUNA',u:'UN',v:0},
+{c:'4.2.28',d:'LAVATÓRIO COM COLUNA SUSPENSA',u:'UN',v:0},
+{c:'4.2.29',d:'CUBA DE EMBUTIR OVAL',u:'UN',v:0},
+{c:'4.2.30',d:'TANQUE CERÂMICO COM COLUNA',u:'UN',v:0},
+{c:'4.2.31',d:'DUCHA HIGIÊNICA MANUAL COM REGISTRO 1/2" E MANGUEIRA 1,20 M',u:'UN',v:0},
+{c:'4.2.32',d:'GATILHO PARA DUCHA HIGIÊNICA MANUAL',u:'UN',v:0},
+{c:'4.2.33',d:'KIT REPARO DE DESCARGA PARA CAIXA ACOPLADA',u:'UN',v:0},
+{c:'4.2.34',d:'ASSENTO PLÁSTICO PARA VASO SANITÁRIO',u:'UN',v:0},
+{c:'4.2.35',d:'SIFÃO DE PVC INTELIGENTE PARA PIA/LAVATÓRIO',u:'UN',v:0},
+{c:'4.2.36',d:'TUBO DE LIGAÇÃO PARA BACIA SANITÁRIA CROMADO DN 38',u:'UN',v:0},
 {c:'4.2.37.1',d:'Ø 20MM',u:'M',v:0},
 {c:'4.2.37.2',d:'Ø 25 MM',u:'M',v:0},
 {c:'4.2.37.3',d:'Ø 32 MM',u:'M',v:0},
@@ -368,13 +407,26 @@ var MATS=[
 {c:'4.2.41.3',d:'Ø 150 MM',u:'UN',v:0},
 {c:'4.2.42.1',d:'100MMX100MMX50MM',u:'UN',v:0},
 {c:'4.2.42.2',d:'150MMX185MMX75MM',u:'UN',v:0},
+{c:'4.2.43',d:'RALO SECO CILÍNDRICO',u:'UN',v:0},
 {c:'4.2.44.1',d:'100 MM',u:'UN',v:0},
 {c:'4.2.44.2',d:'150 MM',u:'UN',v:0},
+{c:'4.2.45',d:'GRELHA E PORTA GRELHA DE PISO 15 X 15 CM',u:'UN',v:0},
 {c:'4.2.46.1',d:'500 LITROS',u:'UN',v:0},
 {c:'4.2.46.2',d:'1.000 LITROS',u:'UN',v:0},
+{c:'4.2.47',d:'TORNEIRA BÓIA ALTA PRESSÃO 3/4" (DN20)',u:'UN',v:0},
+{c:'4.2.48',d:'TORNEIRA BÓIA ALTA PRESSÃO 1 1/4" (DN32)',u:'UN',v:0},
+{c:'4.2.49',d:'CHAVE BÓIA PARA SISTEMA DE BOMBEAMENTO',u:'UN',v:0},
 {c:'4.2.50.1',d:'25 MM',u:'UN',v:0},
 {c:'4.2.50.2',d:'32 MM',u:'UN',v:0},
 {c:'4.2.50.3',d:'60 MM',u:'UN',v:0},
+{c:'4.2.51',d:'MANGUEIRA CRISTAL TRANSPARENTE D=25MM C/ CONEXÕES E FIXAÇÃO',u:'M',v:0},
+{c:'4.2.52',d:'CAIXA DE INSPEÇÃO DE ESGOTO 60X60 C/ CAXILHO E TAMPA EM FERRO FUNDIDO',u:'UN',v:0},
+{c:'4.2.53',d:'CANALETA COLETORA DE ÁGUA PLUVIAL C/ GRELHA FERRO FUNDIDO D=80CM',u:'M',v:0},
+{c:'4.2.54',d:'CAIXA PASSAGEM/INSPEÇÃO ESGOTO POLIPROPILENO DN100 45X35X40CM',u:'UN',v:0},
+{c:'4.2.55',d:'ASPERSOR SPRAY EMERGENTE POP-UP 15 CM',u:'UN',v:0},
+{c:'4.2.56',d:'ASPERSOR SPRAY EMERGENTE POP-UP 30 CM',u:'UN',v:0},
+{c:'4.2.57',d:'ASPERSOR ROTOR 6" EMERGENTE',u:'UN',v:0},
+{c:'4.2.58',d:'ASPERSOR ROTOR 12" EMERGENTE',u:'UN',v:0},
 /* 4.3 SERVIÇOS DE INSTALAÇÕES ELÉTRICAS */
 {c:'4.3.1.1',d:'TRANSFORMADOR DE POTENCIAL, ENCAPSULADO  EM EPÓXI - TP 13,8 kV - TS 230/115 V - 1000 VA, CLASSE DE EXATIDÃO 0,3P75, APROVADO PELA CONCESSIONÁRIA LOCAL.',u:'UN',v:0},
 {c:'4.3.1.2',d:'TRANSFORMADOR DE CORRENTE "TC", ENCAPSULADO EM RESINA EPÓXI, USO INTERNO (INSTALAÇÃO ABRIGADA), TENSÃO MÍNIMA 15kV, CORRENTE PRIMÁRIA MÍNIMA DE 800A, CLASSE DE EXATIDÃO 0,3C100 (MEDIÇÃO) OU 10B200 (PROTEÇÃO), OU 0,3C12,5 + 10B100 (MEDIÇÃO E PROTEÇÃO), FATOR TÉRMICO MÍNIMO 1,2xIN, RELAÇÃO DE TRANSFORMAÇÃO 800:5.',u:'UN',v:0},
@@ -687,6 +739,20 @@ var MATS=[
 {c:'4.5.1.3',d:'BOMBA CENTRÍFUGA TRIFÁSICA, 220 V, VAZÃO MÍNIMA 14600 L/H (PRESSÃO MANOMÉTRICA IGUAL OU SUPERIOR A 48 MCA), POTÊNCIA NOMINAL 5 CV. REF.: DANCOR 630 JM (430)',u:'UN',v:0},
 {c:'4.5.1.4',d:'BOMBA CENTRÍFUGA TRIFÁSICA, 220 V, VAZÃO MÍNIMA 35000 L/H (PRESSÃO MANOMÉTRICA IGUAL OU SUPERIOR A 35 MCA), POTÊNCIA NOMINAL 7,5 CV. REF.: DANCOR 645 JM (667)',u:'UN',v:0},
 {c:'4.5.1.5',d:'BOMBA CENTRÍFUGA TRIFÁSICA, 220 V, SUBMERSÍVEL PARA ÁGUAS SERVIDAS COM SÓLIDOS EM SUSPENSÃO 1/2 CV, VAZÃO MÍNIMA 2200 L/H, DIÂMETRO MÍNIMO DOS SÓLIDOS 98 MM. REFERÊNCIA: SCHNEIDER BRAVADV05.',u:'UN',v:0},
+/* 4.6 AUTOMATIZADORES DE PORTÃO */
+{c:'4.6.1',d:'KIT AUTOMATIZADOR PORTÃO ELETRÔNICO DESLIZANTE',u:'UN',v:0},
+{c:'4.6.2',d:'KIT AUTOMATIZADOR PORTÃO ELETRÔNICO PIVOTANTE',u:'UN',v:0},
+{c:'4.6.3',d:'PLACA MOTOR PORTÃO UNIVERSAL BIVOLT',u:'UN',v:0},
+{c:'4.6.4',d:'CREMALHEIRA PORTÃO DESLIZANTE AÇO GALVANIZADO',u:'M',v:0},
+/* 4.7 INFRAESTRUTURA DE GLP */
+{c:'4.7.1',d:'REGULADOR PRESSÃO 1º ESTÁGIO 9KG/H C/ MANÔMETRO Ø1/2 NTP',u:'UN',v:0},
+{c:'4.7.2',d:'REGULADOR PRESSÃO 2º ESTÁGIO 9KG/H Ø1/2 NTP',u:'UN',v:0},
+{c:'4.7.3',d:'MANGOTE FLEXÍVEL PIG TAIL Ø1/2"',u:'UN',v:0},
+{c:'4.7.4',d:'MANGUEIRA FLEXÍVEL LIGAÇÃO APARELHOS 80CM Ø1/2"',u:'UN',v:0},
+/* 4.8 SISTEMA FOTOVOLTAICO */
+{c:'4.8.1',d:'MÓDULO FOTOVOLTAICO MIN. 600-720Wp, VIDA ÚTIL 25 ANOS, CERT. IEC 61730/61215',u:'UN',v:0},
+{c:'4.8.2',d:'MICROINVERSOR TRIFÁSICO 4 PAINÉIS, ZIGBEE, IP67, SAÍDA 900W',u:'UN',v:0},
+{c:'4.8.3',d:'UNIDADE COMUNICAÇÃO ECU-R COLETA DADOS MICROINVERSORES',u:'UN',v:0},
 {c:'4.9',d:'Diária técnica ICD',u:'Diária',v:380.61},
 /* 5.1 VIDROS E PELÍCULAS */
 {c:'5.1.1',d:'Vidro liso incolor E=4mm (fornec. e instal.)',u:'m²',v:0},
