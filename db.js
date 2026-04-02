@@ -17,6 +17,14 @@ function saveRascunhoAuto(force){
   if(!F||!F.id)return false;
   if(!S.sessao)return false; /* sessão expirada: não salva/sincroniza */
   if(!force&&activeScreenId()!=='s-form')return false;
+  /* FALHA-6 fix: normalizeFormState e syncDraftFromF são definidas no script inline
+     do index.html, que carrega APÓS db.js. Em runtime está OK (autosave dispara após
+     5s), mas se o inline script falhar ao parsear, estas chamadas lançariam
+     ReferenceError a cada 5s, poluindo o console e disparando window.onerror em loop. */
+  if(typeof normalizeFormState!=='function'||typeof syncDraftFromF!=='function'){
+    console.warn('[Autosave] normalizeFormState/syncDraftFromF ainda não disponíveis');
+    return false;
+  }
   try{
     normalizeFormState(F);
     var snap=JSON.stringify(F);
@@ -122,7 +130,10 @@ var DB={
     /* Aplica edições do admin (tu) se existirem */
     try{
       var _tu0=localStorage.getItem('tu');
-      if(_tu0){var _tuArr0=JSON.parse(_tu0);if(Array.isArray(_tuArr0)){_tuArr0.forEach(function(x){if(!x||!x.id)return;var _idx=US.findIndex(function(u){return u.id===x.id;});var _safe={};if(x.pin&&/^\d{4}$/.test(x.pin))_safe.pin=x.pin;if(x.nome&&x.nome.trim())_safe.nome=x.nome.trim();if(x.updated_at)_safe.updated_at=x.updated_at;if(x.cargo)_safe.cargo=x.cargo;if(x.reg)_safe.reg=x.reg;if(x.mat!==undefined)_safe.mat=x.mat;if(x.polo!==undefined)_safe.polo=x.polo;if(x.ativo!==undefined)_safe.ativo=x.ativo;if(_idx>=0)US[_idx]=Object.assign({},US[_idx],_safe);else US.push(x);});}}
+      if(_tu0){var _tuArr0=JSON.parse(_tu0);if(Array.isArray(_tuArr0)){_tuArr0.forEach(function(x){if(!x||!x.id)return;var _idx=US.findIndex(function(u){return u.id===x.id;});var _safe={};
+      /* FALHA-9 fix: aceita PIN legado 4 dígitos OU SHA-256 64 chars hex (padrão desde v72) */
+      var _pinOk=x.pin&&(/^\d{4}$/.test(x.pin)||/^[0-9a-f]{64}$/.test(x.pin));
+      if(_pinOk)_safe.pin=x.pin;if(x.nome&&x.nome.trim())_safe.nome=x.nome.trim();if(x.updated_at)_safe.updated_at=x.updated_at;if(x.cargo)_safe.cargo=x.cargo;if(x.reg)_safe.reg=x.reg;if(x.mat!==undefined)_safe.mat=x.mat;if(x.polo!==undefined)_safe.polo=x.polo;if(x.ativo!==undefined)_safe.ativo=x.ativo;if(_idx>=0)US[_idx]=Object.assign({},US[_idx],_safe);else US.push(x);});}}
     }catch(_e0){console.warn('tu parse erro (sync)',_e0);}
 
     /* ── PASSO 2 (ASYNC): carrega inspeções do IndexedDB/localStorage ────── */

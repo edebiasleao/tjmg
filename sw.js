@@ -1,13 +1,17 @@
-/* TJMG Fiscal — Service Worker v72
-   PWA-1/2: html2pdf.js e qrcode-generator agora cacheados pelo SW para uso offline.
+/* TJMG Fiscal — Service Worker v73
+   BUG-1 fix: supabase-js agora pré-cacheado para funcionar offline.
+   A2   fix: skipWaiting movido para DENTRO do waitUntil — SW só ativa
+             após todos os assets estarem em cache (evita ativar com cache incompleto).
+   PWA-1/2: html2pdf.js e qrcode-generator cacheados pelo SW para uso offline.
    v72: SEG-1/2 hashing, COD-1/2/3/4/5/6, PWA-1/2/3, ARQ-1/2/3 aplicados.
    v71: Fase 4 da modularização — utils.js, router.js, auth.js ativados.
 */
 
-const V = 'tjmg-v72';
+const V = 'tjmg-v73';
 
-/* PWA-1/2: libs CDN que precisam funcionar offline — cacheadas explicitamente. */
+/* PWA-1/2/BUG-1: libs CDN que precisam funcionar offline — cacheadas explicitamente. */
 const CDN_CACHE = [
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
 ];
@@ -40,19 +44,23 @@ const BYPASS = [
   'googleapis.com',
   'gstatic.com',
   'firebase',
-  /* PWA-1/2: cdnjs e jsdelivr removidos do BYPASS para permitir cache das libs offline.
-     As libs específicas são pré-cacheadas via CDN_CACHE no install. */
+  /* PWA-1/2/BUG-1: cdnjs, jsdelivr e jsdelivr removidos do BYPASS para
+     permitir cache das libs offline. As libs específicas são pré-cacheadas
+     via CDN_CACHE no install. */
   'script.google.com',
   'dns.google'
 ];
 
 /* ── Install ── */
 self.addEventListener('install', function(e) {
+  /* A2-fix: skipWaiting DENTRO do waitUntil — o SW só avança para activate
+     após o cache estar 100% populado. Sem isso, o SW poderia ativar antes
+     de ter os assets, servindo respostas incompletas em modo offline. */
   e.waitUntil(
     caches.open(V).then(function(c) {
       /* App shell (same-origin) */
       return c.addAll(CACHE).then(function() {
-        /* PWA-1/2: pré-cachear libs CDN para uso offline */
+        /* BUG-1/PWA: pré-cachear libs CDN (incluindo supabase-js) para uso offline */
         return Promise.all(CDN_CACHE.map(function(url) {
           return fetch(url, {mode:'cors'}).then(function(r) {
             if(r && r.ok) c.put(url, r);
@@ -63,9 +71,11 @@ self.addEventListener('install', function(e) {
       });
     }).catch(function(err) {
       console.warn('[SW] install cache falhou:', err);
+    }).then(function() {
+      /* A2-fix: skipWaiting só após cache completo */
+      return self.skipWaiting();
     })
   );
-  self.skipWaiting();
 });
 
 /* ── Activate: limpa caches antigos ── */

@@ -365,7 +365,7 @@ input:focus,textarea:focus{border-color:var(--a);}
 
 <script>
 'use strict';
-// ── index.html main script — v67 (Fase 2 da modularização) ──────────────
+// ── index.html main script — v73 ──────────────────────────────────────
 // REMOVIDO deste bloco (agora em arquivos externos):
 //   config.js      → APP_VERSION, REG, TIPOS, ST, SIS, ADM, COORD
 //   data.js        → ATVs, MATS, PCI_DATA, EDIFICACOES
@@ -379,10 +379,10 @@ input:focus,textarea:focus{border-color:var(--a);}
 
 
 
-// TJMG Fiscal PWA v72 — Correções de segurança, qualidade e PWA
-// v72: SEG-1/2 (hash SHA-256 PINs/senhas), COD-1..6 (state, escA, uid, ovals, PCI paginação, excluirInsp)
-//      PWA-1/2 (libs CDN offline via SW), PWA-3 (setTimeout removido svLocal)
-//      ARQ-1 (requestIdleCallback compressão), ARQ-2 (handlers erro globais), ARQ-3 (mat u8/u9/u14/u15)
+// TJMG Fiscal PWA v73 — Correções de segurança, qualidade e PWA
+// v73: BUG-1 (supabase offline), BUG-2 (coordExpSelPDF), BUG-3 (double var c),
+//      BUG-4 (Medicoes Sub display), BUG-5 (_inspVis.length), FALHA-6 (guards db),
+//      FALHA-7 (_ospVinculada), FALHA-9 (regex PIN SHA-256), A1-A2 (sw version/skipWaiting)
 // v71: Fase 4: utils.js, router.js, auth.js modularizados
 // v68: report-html.js modularizado (Fase 3): Drive/email removidos, page-break corrigido
 // Todos os sistemas: Login, Home, PCI, Relatorios, Formularios, Admin
@@ -513,7 +513,9 @@ function rHome(){
       h+='<div class="card" style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="openDet(\''+i.id+'\')"><div style="width:34px;height:34px;border-radius:8px;background:'+t.bg+';display:flex;align-items:center;justify-content:center;font-size:16px;">'+t.i+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:700;">'+i.edif+'</div><div style="font-size:10px;color:#64748b;">'+(i.com||'-')+' - '+fdt(i.dtVistoria||i.data)+'</div></div><span class="bdg" style="background:'+t.bg+';color:'+t.c+';">'+t.l+'</span><span class="bdg" style="background:#dcfce7;color:#16a34a;">Enviado</span></div>';
     });
   }
-  if(!S.insp.length)h+='<div style="text-align:center;padding:32px;"><div style="font-size:48px;">&#128203;</div><div style="font-size:14px;color:#94a3b8;margin-top:10px;font-weight:600;">Nenhuma inspecao</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px;">Toque em Criar Relatorio</div></div>';
+  /* BUG-5 fix: usar _inspVis (já filtrada por região) ao invés de S.insp bruto.
+     Fiscal de região sem inspeções ficava com tela em branco sem feedback. */
+  if(!_inspVis.length)h+='<div style="text-align:center;padding:32px;"><div style="font-size:48px;">&#128203;</div><div style="font-size:14px;color:#94a3b8;margin-top:10px;font-weight:600;">Nenhuma inspecao</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px;">Toque em Criar Relatorio</div></div>';
   h+='<div style="height:8px;"></div>';
   el('hbody').innerHTML=h;
 }
@@ -1789,7 +1791,9 @@ function vincularOSP(ospId){
      ativSel:JSON.parse(JSON.stringify(osp.ativSel||{})),
      ativ:'',causas:'',lim:'',normas:'NBR 5674',concl:'',pron:{},
      fach:{FR:{obs:'',nc:false,nd:''},LD:{obs:'',nc:false,nd:''},LE:{obs:'',nc:false,nd:''},FU:{obs:'',nc:false,nd:''}},
-     schk:{},med:{p1:'',p2:'',p3:'',bep:''},sub:null};
+     schk:{},med:{p1:'',p2:'',p3:'',bep:''},sub:null,
+     /* FALHA-7 fix: _ospVinculada explícito evita undefined em tipos não-programada */
+     _ospVinculada:null};
   normalizeFormState(F);
   applyGrupoDaEdificacao(F);
   ensureDraftItems(F);
@@ -1843,7 +1847,8 @@ function rFe(resetScroll){
     sbh+=(si<et?'&#10003;':(si+1))+'</div><div class="sn'+(si===et?' on':'')+'">'+ets[si]+'</div></div>';
   }
   el('fsbr').innerHTML=sbh;
-  var c=el('fbody');c.innerHTML='';
+  /* BUG-3 fix: removido segundo 'var c' — reuso da variável já declarada acima */
+  c=el('fbody');c.innerHTML='';
   if(tn==='Dados'||tn==='Dados/OS'||tn==='Dados OSP'){if(F.tipo==='subestacao')rFSubDados(c);else if(F.tipo==='osp')rFDadosOSP(c);else rFDados(c);}
   else if(tn==='Sistemas')rFSistemas(c);
   else if(tn==='Sel. Atividades')rFSelAtiv(c);
@@ -1855,7 +1860,8 @@ function rFe(resetScroll){
   else if(tn==='Materiais')rFMats(c);
   else if(tn==='Documentos')rFPron(c);
   else if(tn==='Checklist Sub'){rFSubChecklist(c);c.style.display='block';}
-  else if(tn==='Medicoes Sub')rFSubMedicoes(c);
+  /* BUG-4 fix: Medicoes Sub usa mesma estrutura que Checklist Sub — precisa display:block */
+  else if(tn==='Medicoes Sub'){rFSubMedicoes(c);c.style.display='block';}
   else if(tn==='Concluir'||tn==='Conclusao')rFConc(c);
   else c.innerHTML='<div style="padding:20px;color:#64748b;">'+tn+'</div>';
   if(prevScroll>0){c.scrollTop=prevScroll;}

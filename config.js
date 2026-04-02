@@ -6,10 +6,10 @@
 // Variáveis são globais (var) — compatível com classic scripts.
 // ============================================================
 
-// VERSÃO CENTRALIZADA — v69
+// VERSÃO CENTRALIZADA — v73
 // Manter em sincronia com sw.js (const V) e manifest.json (start_url ?v=)
 // ------------------------------------------------------------
-var APP_VERSION = 'v72';
+var APP_VERSION = 'v73';
 /* US é sempre populado por DB.ld() — não pré-definir aqui evita divergência
    entre duas fontes de verdade e elimina o risco de dados obsoletos serem
    enviados ao Supabase antes do pull inicial. */

@@ -266,4 +266,7 @@ window.coordSelAll    = coordSelAll;
 window.coordExpSel    = coordExpSel;
 window.openDetCoord   = openDetCoord;
 window.cancelPin      = cancelPin;
-window.coordExpSelPDF = coordExpSelPDF;
+/* BUG-2 fix: coordExpSelPDF é definida em index.html (script inline) e já está no
+   escopo global. Exportar aqui era um bug: auth.js executa ANTES do inline script,
+   então no momento desta linha coordExpSelPDF ainda é undefined, e
+   window.coordExpSelPDF ficava undefined — TypeError ao clicar em "Exportar PDF". */
